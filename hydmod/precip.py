@@ -29,7 +29,22 @@ def precipAsSnow(precip, temp, train=3.0, tsnow=0.0):
         tsnow: Temperature at which all precipitation becomes snow (default = 0.0 C)
 
     Returns:
+        Daily precipitation falling as snow
 
     """
     snow = np.where(temp < train, np.where(temp>tsnow, (temp-tsnow)/(train-tsnow), 0.0), 0.0)
     return snow
+
+def precipDaily(acprecip):
+    """
+    Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
+    Args:
+        acprecip: Accumulated precipitation (numpy array 1D)
+
+    Returns:
+        Daily precipitation as a 1D numpy array
+
+    """
+
+    acprecip = np.insert(acprecip, 0, 0)
+    return(np.ediff1d(acprecip))
