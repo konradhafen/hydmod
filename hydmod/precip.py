@@ -15,25 +15,8 @@ def meltDegreeDay_USACE(k, temp, tbase=0.0):
 
     """
     melt = k*(temp-tbase)
-    melt[melt < 0] = 0
+    melt[melt < 0.0] = 0.0
     return melt
-
-def precipAsSnow(precip, temp, train=3.0, tsnow=0.0):
-    """
-    Determine the amount of precipitation falling as snow
-
-    Args:
-        precip: Daily precipitation (numpy array)
-        temp: Daily mean (or min or max) air temperature (numpy array)
-        train: Temperature at which all precipitation becomes rain (default = 3.0 C)
-        tsnow: Temperature at which all precipitation becomes snow (default = 0.0 C)
-
-    Returns:
-        Daily precipitation falling as snow
-
-    """
-    snow = np.where(temp < train, np.where(temp>tsnow, (temp-tsnow)/(train-tsnow), 0.0), 0.0)
-    return snow
 
 def precipDaily(acprecip):
     """
@@ -48,3 +31,22 @@ def precipDaily(acprecip):
 
     acprecip = np.insert(acprecip, 0, 0)
     return(np.ediff1d(acprecip))
+
+def precipPhase(precip, temp, train=3.0, tsnow=0.0):
+    """
+    Determine the amount of precipitation falling as snow
+
+    Args:
+        precip: Daily precipitation (numpy array)
+        temp: Daily mean (or min or max) air temperature (numpy array)
+        train: Temperature at which all precipitation becomes rain (default = 3.0 C)
+        tsnow: Temperature at which all precipitation becomes snow (default = 0.0 C)
+
+    Returns:
+        Daily precipitation falling as snow
+
+    """
+    snow = np.where(temp < train, np.where(temp>tsnow, np.multiply(precip, np.divide(np.subtract(temp,tsnow),
+                                                                                     (train-tsnow))), precip), 0.0)
+    rain = np.subtract(precip, snow)
+    return snow, rain
