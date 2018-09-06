@@ -1,5 +1,6 @@
 from precip import *
 from stats import *
+import matplotlib.pyplot as plt
 
 fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
@@ -23,8 +24,13 @@ tsnow = 0.76
 #calculate melted snow
 swe_melt = meltDegreeDay_USACE(k, tavg, tbase)
 ppt_snow, ppt_rain = precipPhase(ppt, tavg, train, tsnow)
+swe_mod = modelSWE(ppt_snow, swe_melt)
 
-print(ppt[4:10])
-print(ppt_rain[4:10])
-print(ppt_snow[4:10])
-print(swe_melt[4:10])
+print("NSE", nse(swe_mod, swe))
+print("RMSE", rmse(swe_mod, swe))
+print("MDSE", md(swe_mod, swe))
+
+
+index = np.arange(0, swe.shape[0], 1)
+plt.plot(index, swe, 'r', index, swe_mod, 'b')
+plt.show()

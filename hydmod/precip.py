@@ -18,6 +18,15 @@ def meltDegreeDay_USACE(k, temp, tbase=0.0):
     melt[melt < 0.0] = 0.0
     return melt
 
+def modelSWE(ppt_snow, swe_melt):
+    swe_cum = np.zeros(ppt_snow.shape, dtype=np.float32)
+    for i in range(1,ppt_snow.shape[0]):
+        swe_inc = swe_cum[i-1] + ppt_snow[i] - swe_melt[i]
+        if swe_inc > 0.0:
+            swe_cum[i] = swe_inc
+
+    return swe_cum
+
 def precipDaily(acprecip):
     """
     Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
