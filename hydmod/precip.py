@@ -19,13 +19,28 @@ def meltDegreeDay_USACE(k, temp, tbase=0.0):
     return melt
 
 def modelSWE(ppt_snow, swe_melt):
+    """
+    Change in snow water equivalent when accounting for melt
+
+    Args:
+        ppt_snow: Precipitation that falls as snow
+        swe_melt: Snowmelt
+
+    Returns:
+        Cumulative snow water equivalent (SWE), and the actual amount of snow that melted
+
+    """
     swe_cum = np.zeros(ppt_snow.shape, dtype=np.float32)
+    act_melt = np.zeros(swe_melt.shape, dtype=np.float32)
     for i in range(1,ppt_snow.shape[0]):
         swe_inc = swe_cum[i-1] + ppt_snow[i] - swe_melt[i]
         if swe_inc > 0.0:
             swe_cum[i] = swe_inc
+            act_melt[i] = swe_melt[i]
+        else:
+            act_melt[i] = swe_cum[i-1]
 
-    return swe_cum
+    return swe_cum, act_melt
 
 def precipDaily(acprecip):
     """
@@ -40,6 +55,23 @@ def precipDaily(acprecip):
 
     acprecip = np.insert(acprecip, 0, 0)
     return(np.ediff1d(acprecip))
+
+def precipInput(ppt_rain, swe_melt):
+    """
+    Rain plus melted snow
+
+    Args:
+        ppt_rain: Precipitation falling as rain
+        swe: Cumulative snow water equivalent
+        swe_melt: Melted snow water equivalent
+
+    Returns:
+        Melted SWE plus rainfall
+
+    """
+    melt = np.where(np.subtract(swe, swe_melt)>0.0, swe_melt, swe)
+    ppt_in = np.add(melt, ppt_rain)
+    return ppt_in
 
 def precipPhase(precip, temp, train=3.0, tsnow=0.0):
     """
