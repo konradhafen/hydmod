@@ -26,8 +26,10 @@ def nse(modeled, observed):
         NSE value
 
     """
-
-    return(1-(np.sum(np.square(np.subtract(observed, modeled)))/np.sum(np.square(np.subtract(observed, np.sum(observed))))))
+    obs_mod2 = np.sum(np.square(np.subtract(observed, modeled)))
+    obs_mean2 = np.sum(np.square(np.subtract(observed, np.mean(observed))))
+    nse = 1-(obs_mod2/obs_mean2)
+    return nse
 
 def rmse(modeled, observed):
     """
@@ -40,4 +42,4 @@ def rmse(modeled, observed):
     Returns:
 
     """
-    return(np.nanmean(np.sqrt(np.square(np.subtract(modeled - observed^2)))))
+    return(np.nanmean(np.sqrt(np.square(np.subtract(modeled, observed)))))
