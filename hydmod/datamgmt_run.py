@@ -40,8 +40,8 @@ print("rain + snow", np.sum(ppt_rain) + np.sum(ppt_snow))
 s = np.zeros(ppt_in.shape)
 r = np.zeros(ppt_in.shape)
 r[0] = 0 #set initial runoff
-s[0] = 25 #set initial storage (i.e water content)
-soildepth = 20 #cm
+s[0] = 0 #set initial storage (i.e water content)
+soildepth = 80 #cm
 ponddepth = 100-soildepth #cm
 
 #Soil info and ET info
@@ -70,5 +70,8 @@ p = np.where(s>fcl, s-fcl, 0.0)
 swc = np.subtract(s, p)
 
 index = np.arange(0, swe.shape[0], 1)
-plt.plot(index, s, 'r', index, p, 'b', index, r, 'g', index, swc, 'k')
+plt.subplot(2,1,1)
+plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b', index, r, 'c')
+plt.subplot(2,1,2)
+plt.plot(index,et,'g')
 plt.show()
