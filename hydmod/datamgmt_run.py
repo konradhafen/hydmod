@@ -8,13 +8,14 @@ fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klon
 indat = np.genfromtxt(fn, delimiter=",", skip_header=1)
 
 #convert to cm
-swe = indat[1:,1]*2.54
-ppt = indat[:-1,6]*2.54
+ndays = 3000
+swe = indat[1:ndays,1]*2.54
+ppt = indat[:ndays-1,6]*2.54
 
 #convert to degrees C
-tmin = np.multiply(np.subtract(indat[:-1,4],32.0), (5.0/9.0))
-tmax = np.multiply(np.subtract(indat[:-1,3],32.0), (5.0/9.0))
-tavg = np.multiply(np.subtract(indat[:-1,5],32.0), (5.0/9.0))
+tmin = np.multiply(np.subtract(indat[-ndays:-1,4],32.0), (5.0/9.0))
+tmax = np.multiply(np.subtract(indat[-ndays:-1,3],32.0), (5.0/9.0))
+tavg = np.multiply(np.subtract(indat[-ndays:-1,5],32.0), (5.0/9.0))
 
 #from optimization in R
 k = 1.1456
@@ -40,12 +41,13 @@ print("rain + snow", np.sum(ppt_rain) + np.sum(ppt_snow))
 s = np.zeros(ppt_in.shape)
 r = np.zeros(ppt_in.shape)
 r[0] = 0 #set initial runoff
-s[0] = 0 #set initial storage (i.e water content)
-soildepth = 80 #cm
+s[0] = 40 #set initial storage (i.e water content)
+soildepth = 50 #cm
 ponddepth = 100-soildepth #cm
 
 #Soil info and ET info
 et = np.zeros(ppt_in.shape)
+theta = np.zeros(ppt_in.shape)
 pet = 0.4 #cm
 fc = 0.4
 wp = 0.1
@@ -57,7 +59,7 @@ print("smax", smax)
 et[0] = modelET(pet, fc, wp, s[0])
 s[0] = s[0] + ppt_in[0] - et[0]
 for i in range(1, ppt_in.shape[0], 1):
-    et[i] = modelET(pet, fcl, wpl, s[i-1])
+    et[i]= modelET(pet, fcl, wpl, s[i-1])
     s[i] = s[i-1] + ppt_in[i] - et[i]
     if s[i] > smax:
         r[i] = s[i] - smax
@@ -73,5 +75,5 @@ index = np.arange(0, swe.shape[0], 1)
 plt.subplot(2,1,1)
 plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b', index, r, 'c')
 plt.subplot(2,1,2)
-plt.plot(index,et,'g')
+plt.plot(index,et,'g', theta, 'k')
 plt.show()
