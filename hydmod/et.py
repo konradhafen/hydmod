@@ -18,5 +18,5 @@ def modelET(pet, fc, wp, wc):
         theta = (0.8*(fc - wc))/(0.8*fc-wp)
     elif wc <= wp:
         theta = 0.0
-    print("wc", wc, "fc", fc, "wp", wp, "theta", theta)
+    #print("wc", wc, "fc", fc, "wp", wp, "theta", theta)
     return(pet*theta)
