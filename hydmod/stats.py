@@ -27,7 +27,9 @@ def nse(modeled, observed):
 
     """
     obs_mod2 = np.sum(np.square(np.subtract(observed, modeled)))
+    print(obs_mod2)
     obs_mean2 = np.sum(np.square(np.subtract(observed, np.mean(observed))))
+    print(obs_mean2)
     nse = 1-(obs_mod2/obs_mean2)
     return nse
 

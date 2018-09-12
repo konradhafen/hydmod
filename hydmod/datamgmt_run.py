@@ -1,21 +1,23 @@
 from precip import *
 from et import *
 from stats import *
+#import richdem
+
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 indat = np.genfromtxt(fn, delimiter=",", skip_header=1)
 
 #convert to cm
-ndays = 3000
+ndays = indat.shape[0]
 swe = indat[1:ndays,1]*2.54
 ppt = indat[:ndays-1,6]*2.54
 
 #convert to degrees C
-tmin = np.multiply(np.subtract(indat[-ndays:-1,4],32.0), (5.0/9.0))
-tmax = np.multiply(np.subtract(indat[-ndays:-1,3],32.0), (5.0/9.0))
-tavg = np.multiply(np.subtract(indat[-ndays:-1,5],32.0), (5.0/9.0))
+tmin = np.multiply(np.subtract(indat[:ndays-1,4],32.0), (5.0/9.0))
+tmax = np.multiply(np.subtract(indat[:ndays-1,3],32.0), (5.0/9.0))
+tavg = np.multiply(np.subtract(indat[:ndays-1,5],32.0), (5.0/9.0))
 
 #from optimization in R
 k = 1.1456
@@ -31,7 +33,7 @@ ppt_in = np.add(ppt_rain, act_melt)
 
 print("NSE", nse(swe_mod, swe))
 print("RMSE", rmse(swe_mod, swe))
-print("MDSE", md(swe_mod, swe))
+print("MD", md(swe_mod, swe))
 
 print("precip in", np.sum(ppt_in))
 print("precip", np.sum(ppt))
@@ -42,12 +44,11 @@ s = np.zeros(ppt_in.shape)
 r = np.zeros(ppt_in.shape)
 r[0] = 0 #set initial runoff
 s[0] = 40 #set initial storage (i.e water content)
-soildepth = 50 #cm
+soildepth = 80 #cm
 ponddepth = 100-soildepth #cm
 
 #Soil info and ET info
 et = np.zeros(ppt_in.shape)
-theta = np.zeros(ppt_in.shape)
 pet = 0.4 #cm
 fc = 0.4
 wp = 0.1
@@ -72,8 +73,12 @@ p = np.where(s>fcl, s-fcl, 0.0)
 swc = np.subtract(s, p)
 
 index = np.arange(0, swe.shape[0], 1)
-plt.subplot(2,1,1)
-plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b', index, r, 'c')
-plt.subplot(2,1,2)
-plt.plot(index,et,'g', theta, 'k')
+plt.subplot(4,1,1)
+plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b')
+plt.subplot(4,1,2)
+plt.plot(index, ppt_in, 'b',index, r, 'c')
+plt.subplot(4,1,3)
+plt.plot(index,et,'g')
+plt.subplot(4,1,4)
+plt.plot(index,swe,'b',index,swe_mod,'r')
 plt.show()
