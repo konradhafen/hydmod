@@ -26,14 +26,14 @@ train = 2.22
 tsnow = 0.76
 
 #calculate melted snow
-swe_melt = meltDegreeDay_USACE(k, tavg, tbase)
-ppt_snow, ppt_rain = precipPhase(ppt, tavg, train, tsnow)
-swe_mod, act_melt = modelSWE(ppt_snow, swe_melt)
+swe_melt = MeltDegreeDay_USACE(k, tavg, tbase)
+ppt_snow, ppt_rain = PrecipPhase(ppt, tavg, train, tsnow)
+swe_mod, act_melt = ModelSWE(ppt_snow, swe_melt)
 ppt_in = np.add(ppt_rain, act_melt)
 
-print("NSE", nse(swe_mod, swe))
-print("RMSE", rmse(swe_mod, swe))
-print("MD", md(swe_mod, swe))
+print("NSE", NSE(swe_mod, swe))
+print("RMSE", RMSE(swe_mod, swe))
+print("MD", MeanDifference(swe_mod, swe))
 
 print("precip in", np.sum(ppt_in))
 print("precip", np.sum(ppt))
@@ -57,10 +57,10 @@ wpl = 0.1*soildepth
 smax = fcl + ponddepth #cm
 print("smax", smax)
 
-et[0] = modelET(pet, fc, wp, s[0])
+et[0] = ModelET(pet, fc, wp, s[0])
 s[0] = s[0] + ppt_in[0] - et[0]
 for i in range(1, ppt_in.shape[0], 1):
-    et[i]= modelET(pet, fcl, wpl, s[i-1])
+    et[i]= ModelET(pet, fcl, wpl, s[i-1])
     s[i] = s[i-1] + ppt_in[i] - et[i]
     if s[i] > smax:
         r[i] = s[i] - smax

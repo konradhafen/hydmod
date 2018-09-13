@@ -1,6 +1,7 @@
 import numpy as np
+from radiation import *
 
-def modelET(pet, fc, wp, wc):
+def ET_theta(pet, fc, wp, wc):
     """
     Model evapotranspiration, multiply potential ET by factor based on soil water content
     Args:

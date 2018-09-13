@@ -1,6 +1,6 @@
 import numpy as np
 
-def md(modeled, observed):
+def MeanDifference(modeled, observed):
     """
     Mean difference between modeled and observed values
 
@@ -14,7 +14,7 @@ def md(modeled, observed):
     """
     return(np.mean(np.subtract(modeled, observed)))
 
-def nse(modeled, observed):
+def NSE(modeled, observed):
     """
     Nash-Sutcliffe Efficiency
 
@@ -33,7 +33,7 @@ def nse(modeled, observed):
     nse = 1-(obs_mod2/obs_mean2)
     return nse
 
-def rmse(modeled, observed):
+def RMSE(modeled, observed):
     """
     Root mean square error
 

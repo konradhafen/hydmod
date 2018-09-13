@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-def meltDegreeDay_USACE(k, temp, tbase=0.0):
+def MeltDegreeDay_USACE(k, temp, tbase=0.0):
     """
     Degree day snowmelt with US Army Corps of Engineers empirical model
 
@@ -18,7 +18,7 @@ def meltDegreeDay_USACE(k, temp, tbase=0.0):
     melt[melt < 0.0] = 0.0
     return melt
 
-def modelSWE(ppt_snow, swe_melt):
+def ModelSWE(ppt_snow, swe_melt):
     """
     Change in snow water equivalent when accounting for melt
 
@@ -42,7 +42,7 @@ def modelSWE(ppt_snow, swe_melt):
 
     return swe_cum, act_melt
 
-def precipDaily(acprecip):
+def PrecipDaily(acprecip):
     """
     Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
     Args:
@@ -56,7 +56,7 @@ def precipDaily(acprecip):
     acprecip = np.insert(acprecip, 0, 0)
     return(np.ediff1d(acprecip))
 
-def precipInput(ppt_rain, swe_melt):
+def PrecipInput(ppt_rain, swe_melt):
     """
     Rain plus melted snow
 
@@ -73,7 +73,7 @@ def precipInput(ppt_rain, swe_melt):
     ppt_in = np.add(melt, ppt_rain)
     return ppt_in
 
-def precipPhase(precip, temp, train=3.0, tsnow=0.0):
+def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     """
     Determine the amount of precipitation falling as snow
 
