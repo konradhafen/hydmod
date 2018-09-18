@@ -61,18 +61,19 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     #Storage and runoff
     s = np.zeros(ppt_in.shape)
     r = np.zeros(ppt_in.shape)
+    hwt = np.zeros(ppt_in.shape)
     qlat = np.zeros(ppt_in.shape)
     r[0] = 0 #set initial runoff
-    s[0] = 0 #set initial storage (i.e water content)
-    soildepth = 500 #mm
+    s[0] = 500 #set initial storage (i.e water content)
+    soildepth = 1000 #mm
     ponddepth = 1000-soildepth #mm
 
     #Soil info and ET info
     et = np.zeros(ppt_in.shape)
-    ksat = 1000 #mm/day
-    slope = 1.0
+    ksat = 100 #mm/day
+    slope = 0.1
     por = 0.5
-    fc = 0.4
+    fc = 0.3
     wp = 0.1
     porl = por*soildepth
     fcl = fc*soildepth
@@ -85,8 +86,8 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     for i in range(1, ppt_in.shape[0], 1):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
         s[i] = s[i-1] + ppt_in[i] - et[i]
-        hwt = WaterTableHeight(por, fc, soildepth, (s[i-1]/100.0))
-        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt)
+        hwt[i] = WaterTableHeight(por, fc, (s[i-1]/1000.0), soildepth)
+        qlat[i] = LateralFlow_Darcy(ksat, slope)
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
@@ -98,12 +99,14 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     swc = np.subtract(s, p)
 
     index = np.arange(0, swe.shape[0], 1)
-    plt.subplot(3,1,1)
+    plt.subplot(4,1,1)
     plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b')
-    plt.subplot(3,1,2)
+    plt.subplot(4,1,2)
     plt.plot(index, pet, 'r', index, et, 'b', index, r, 'c')
-    plt.subplot(3, 1, 3)
-    plt.plot(index, qlat)
+    plt.subplot(4, 1, 3)
+    plt.plot(index, np.abs(qlat), 'b')
+    plt.subplot(4,1,4)
+    plt.plot(index, hwt)
     # plt.subplot(3,1,3)
     # plt.plot(index,et,'g')
     # plt.subplot(4,1,4)

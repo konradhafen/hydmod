@@ -8,6 +8,6 @@ def WaterTableHeight(por, fc, theta, depth):
         hwt = depth*((theta-fc)/(por-fc))
     return hwt
 
-def LateralFlow_Darcy(ksat, slope, hwt, width=1):
-    qlat = -1.0*ksat*slope*hwt*width
+def LateralFlow_Darcy(ksat, slope, width=1):
+    qlat = -1.0*ksat*slope*width
     return qlat
