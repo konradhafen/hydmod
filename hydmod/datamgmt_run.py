@@ -2,6 +2,7 @@ from precip import *
 from et import *
 from stats import *
 from conversions import *
+from groundwater import *
 from datetime import datetime
 import pandas as pd
 #import richdem
@@ -60,6 +61,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     #Storage and runoff
     s = np.zeros(ppt_in.shape)
     r = np.zeros(ppt_in.shape)
+    qlat = np.zeros(ppt_in.shape)
     r[0] = 0 #set initial runoff
     s[0] = 100 #set initial storage (i.e water content)
     soildepth = 1000 #mm
@@ -67,12 +69,15 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
 
     #Soil info and ET info
     et = np.zeros(ppt_in.shape)
-    #pet = 0.4 #cm
+    ksat = 1000 #mm/day
+    slope = 1.0
+    por = 0.5
     fc = 0.4
     wp = 0.1
-    fcl = 0.4*soildepth
-    wpl = 0.1*soildepth
-    smax = fcl + ponddepth #mm
+    porl = por*soildepth
+    fcl = fc*soildepth
+    wpl = wp*soildepth
+    smax = porl + ponddepth #mm
     print("smax", smax)
 
     et[0] = ET_theta(pet[0], fc, wp, s[0])
@@ -80,6 +85,8 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     for i in range(1, ppt_in.shape[0], 1):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
         s[i] = s[i-1] + ppt_in[i] - et[i]
+        hwt = WaterTableHeight(por, fc, soildepth, (s[i-1]/100.0))
+        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt)
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
@@ -87,14 +94,16 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     #runoff/excess
 
     #pond depth
-    p = np.where(s>fcl, s-fcl, 0.0)
+    p = np.where(s>porl, s-porl, 0.0)
     swc = np.subtract(s, p)
 
     index = np.arange(0, swe.shape[0], 1)
-    plt.subplot(2,1,1)
+    plt.subplot(3,1,1)
     plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b')
-    plt.subplot(2,1,2)
+    plt.subplot(3,1,2)
     plt.plot(index, pet, 'r', index, et, 'b', index, r, 'c')
+    plt.subplot(3, 1, 3)
+    plt.plot(index, qlat)
     # plt.subplot(3,1,3)
     # plt.plot(index,et,'g')
     # plt.subplot(4,1,4)
