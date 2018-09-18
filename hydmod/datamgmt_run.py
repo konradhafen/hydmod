@@ -18,7 +18,7 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = 365*4#indat.shape[0]
+ndays = 365#indat.shape[0]
 swe = indat[1:ndays,0]*25.4
 ppt = indat[:ndays-1,5]*25.4
 
@@ -61,8 +61,8 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     s = np.zeros(ppt_in.shape)
     r = np.zeros(ppt_in.shape)
     r[0] = 0 #set initial runoff
-    s[0] = 100 #set initial storage (i.e water content)
-    soildepth = 1000 #mm
+    s[0] = 0 #set initial storage (i.e water content)
+    soildepth = 500 #mm
     ponddepth = 1000-soildepth #mm
 
     #Soil info and ET info
