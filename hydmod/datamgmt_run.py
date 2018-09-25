@@ -19,7 +19,7 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = 365#indat.shape[0]
+ndays = 365*8#indat.shape[0]
 swe = indat[1:ndays,0]*25.4
 ppt = indat[:ndays-1,5]*25.4
 
@@ -29,6 +29,7 @@ tmax = np.multiply(np.subtract(indat[:ndays-1,2],32.0), (5.0/9.0))
 tavg = np.multiply(np.subtract(indat[:ndays-1,4],32.0), (5.0/9.0))
 
 doy = doy[:ndays-1]
+date = indate[:ndays-1]
 
 def RunModel(swe, ppt, tmin, tmax, tavg, doy):
 
@@ -64,7 +65,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     hwt = np.zeros(ppt_in.shape)
     qlat = np.zeros(ppt_in.shape)
     r[0] = 0 #set initial runoff
-    s[0] = 500 #set initial storage (i.e water content)
+    s[0] = 0 #set initial storage (i.e water content)
     soildepth = 1000 #mm
     ponddepth = 1000-soildepth #mm
 
@@ -87,7 +88,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
         s[i] = s[i-1] + ppt_in[i] - et[i]
         hwt[i] = WaterTableHeight(por, fc, (s[i-1]/1000.0), soildepth)
-        qlat[i] = LateralFlow_Darcy(ksat, slope)
+        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], 1000.0)
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
@@ -106,7 +107,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     plt.subplot(4, 1, 3)
     plt.plot(index, np.abs(qlat), 'b')
     plt.subplot(4,1,4)
-    plt.plot(index, hwt)
+    plt.plot(date, hwt)
     # plt.subplot(3,1,3)
     # plt.plot(index,et,'g')
     # plt.subplot(4,1,4)
