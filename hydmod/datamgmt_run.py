@@ -9,7 +9,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -71,7 +71,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
 
     #Soil info and ET info
     et = np.zeros(ppt_in.shape)
-    ksat = 100 #mm/day
+    ksat = 1000 #mm/day
     slope = 0.1
     por = 0.5
     fc = 0.3
@@ -86,9 +86,11 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     s[0] = s[0] + ppt_in[0] - et[0]
     for i in range(1, ppt_in.shape[0], 1):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
-        s[i] = s[i-1] + ppt_in[i] - et[i]
+
         hwt[i] = WaterTableHeight(por, fc, (s[i-1]/1000.0), soildepth)
-        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], 1000.0)
+        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], length=100000.0)
+        qlatin = 1.2*qlat[i]
+        s[i] = s[i - 1] + ppt_in[i] - et[i] + qlat[i] - qlatin
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
