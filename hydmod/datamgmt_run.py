@@ -9,7 +9,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -19,7 +19,7 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = 365*8#indat.shape[0]
+ndays = math.ceil(365*3.5)#indat.shape[0]
 swe = indat[1:ndays,0]*25.4
 ppt = indat[:ndays-1,5]*25.4
 
@@ -64,18 +64,26 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     r = np.zeros(ppt_in.shape)
     hwt = np.zeros(ppt_in.shape)
     qlat = np.zeros(ppt_in.shape)
+    qlatin = np.zeros(ppt_in.shape)
+    perc = np.zeros(ppt_in.shape)
+    sb = np.zeros(ppt_in.shape)
+    bf = np.zeros(ppt_in.shape)
+    q = np.zeros(ppt_in.shape)
     r[0] = 0 #set initial runoff
     s[0] = 0 #set initial storage (i.e water content)
+    sb[0] = 0 #set initial aquifer storage (baseflow source)
     soildepth = 1000 #mm
     ponddepth = 1000-soildepth #mm
 
     #Soil info and ET info
     et = np.zeros(ppt_in.shape)
-    ksat = 1000 #mm/day
+    ksat = 1000.0 #mm/day
     slope = 0.1
     por = 0.5
     fc = 0.3
     wp = 0.1
+    ksub = 1.0 #mm/day
+    alpha = 0.02
     porl = por*soildepth
     fcl = fc*soildepth
     wpl = wp*soildepth
@@ -88,14 +96,17 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
 
         hwt[i] = WaterTableHeight(por, fc, (s[i-1]/1000.0), soildepth)
-        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], length=100000.0)
-        qlatin = 1.2*qlat[i]
-        s[i] = s[i - 1] + ppt_in[i] - et[i] + qlat[i] - qlatin
+        if hwt[i] > 0:
+            perc[i] = Percolation(ksub)
+        bf[i] = Baseflow(alpha, sb[i-1])
+        sb[i] = sb[i-1] + perc[i] - bf[i]
+        qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], length=10000.0)
+        qlatin[i] = 1.0*qlat[i]
+        s[i] = s[i - 1] + ppt_in[i] - et[i] - qlat[i] + qlatin[i] - perc[i]
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
-
-    #runoff/excess
+        q[i] = r[i] + qlat[i] + bf[i]
 
     #pond depth
     p = np.where(s>porl, s-porl, 0.0)
@@ -105,20 +116,23 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     plt.subplot(4,1,1)
     plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b')
     plt.subplot(4,1,2)
-    plt.plot(index, pet, 'r', index, et, 'b', index, r, 'c')
+    plt.plot(index, pet, 'r', index, et, 'b')
     plt.subplot(4, 1, 3)
-    plt.plot(index, np.abs(qlat), 'b')
+    plt.plot(index, q, 'b', index, qlat, 'g', index, r, 'c')
     plt.subplot(4,1,4)
-    plt.plot(date, hwt)
+    plt.plot(date, bf, 'r', date, sb, 'k')
     # plt.subplot(3,1,3)
     # plt.plot(index,et,'g')
     # plt.subplot(4,1,4)
     # plt.plot(index,swe,'b',index,swe_mod,'r')
     plt.show()
+
+    plt.plot(date, q, 'b', date, bf, 'r', date, qlat, 'g', date, r, 'c')
+    plt.show()
     print("precip", np.sum(ppt_in))
     print("et", np.sum(et))
     print("r", np.sum(r))
     print("storage", s[-1])
-    print("balance", s[-1]+np.sum(et)+np.sum(r)-s[0])
+    print("balance", s[-1]+np.sum(et)+np.sum(r)-s[0]+np.sum(np.subtract(qlat, qlatin))-np.sum(perc))
 
 RunModel(swe, ppt, tmin, tmax, tavg, doy)
