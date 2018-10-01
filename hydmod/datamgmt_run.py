@@ -19,7 +19,7 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = math.ceil(365*3.5)#indat.shape[0]
+ndays = math.ceil(365*8.5)#indat.shape[0]
 swe = indat[1:ndays,0]*25.4
 ppt = indat[:ndays-1,5]*25.4
 
@@ -127,12 +127,14 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     # plt.plot(index,swe,'b',index,swe_mod,'r')
     plt.show()
 
-    plt.plot(date, q, 'b', date, bf, 'r', date, qlat, 'g', date, r, 'c')
+    plt.plot(date, bf, 'r', date, qlat, 'g', date, r, 'c', date, q, 'b')
+    plt.show()
+    plt.plot(date, ((q/1000.0)*10.0*10.0)/(60.0*60.0*24.0), 'b')
     plt.show()
     print("precip", np.sum(ppt_in))
     print("et", np.sum(et))
     print("r", np.sum(r))
     print("storage", s[-1])
-    print("balance", s[-1]+np.sum(et)+np.sum(r)-s[0]+np.sum(np.subtract(qlat, qlatin))-np.sum(perc))
+    print("balance", s[-1]+np.sum(et)+np.sum(r)-s[0]+np.sum(np.subtract(qlat, qlatin))+np.sum(perc))
 
 RunModel(swe, ppt, tmin, tmax, tavg, doy)
