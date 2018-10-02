@@ -6,8 +6,8 @@ def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     Degree day snowmelt with US Army Corps of Engineers empirical model
 
     Args:
-        k: Empirically derived constant with units length/degree/day
         temp: Daily mean (or min or max) air temperature (numpy array)
+        k: Empirically derived constant with units length/degree/day
         tbase: Base temperature. USACE recommends 0.0 (C) for forested areas and -4.4 (C) for open areas (default = 0.0)
 
     Returns:
@@ -89,5 +89,31 @@ def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     """
     snow = np.where(temp < train, np.where(temp>tsnow, np.multiply(precip, np.divide(np.subtract(temp,tsnow),
                                                                                      (train-tsnow))), precip), 0.0)
+    rain = np.subtract(precip, snow)
+    return snow, rain
+
+def PrecipPhase_3d(precip, temp, train=3.0, tsnow=0.0):
+    """
+    Determine the amount of precipitation falling as snow
+
+    Args:
+        precip: Daily precipitation (3d numpy array)
+        temp: Daily mean (or min or max) air temperature (3d numpy array)
+        train: Temperature at which all precipitation becomes rain (default = 3.0 C)
+        tsnow: Temperature at which all precipitation becomes snow (default = 0.0 C)
+
+    Returns:
+        Daily precipitation falling as snow
+
+    """
+    snow = np.zeros(precip.shape)
+    print(snow.shape)
+    print(precip.shape)
+    for i in np.arange(0, precip.shape[1]):
+        for j in np.arange(0, precip.shape[2]):
+            snow[:,i,j] = np.where(temp[:,i,j] < train, np.where(temp[:,i,j]>tsnow,
+                                                          np.multiply(precip[:,i,j],
+                                                                      np.divide(np.subtract(temp[:,i,j],tsnow),
+                                                                                (train-tsnow))), precip[:,i,j]), 0.0)
     rain = np.subtract(precip, snow)
     return snow, rain

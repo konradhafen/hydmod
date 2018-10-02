@@ -19,7 +19,7 @@ dem = CreateTestDEM()
 nrow = 3
 ncol = 3
 
-fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -54,10 +54,11 @@ tsnow = 0.76
 
 #calculate melted snow
 swe_melt = MeltDegreeDay_USACE(tavg, k, tbase)
-print(swe_melt)
 swe_melt2d = np.apply_along_axis(MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
-print(swe_melt2d)
 ppt_snow, ppt_rain = PrecipPhase(ppt, tavg, train, tsnow)
+ppt_snow2d, ppt_rain2d = PrecipPhase_3d(ppt2d, tavg2d, train, tsnow)
+print(ppt_rain)
+print(ppt_rain2d)
 swe_mod, act_melt = ModelSWE(ppt_snow, swe_melt)
 ppt_in = np.add(ppt_rain, act_melt)
 
