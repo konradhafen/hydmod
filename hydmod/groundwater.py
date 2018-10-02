@@ -1,6 +1,6 @@
 
-def Baseflow(alpha, storage):
-    return alpha*storage
+def Baseflow(alpha, storage, beta=1):
+    return alpha*storage**beta
 
 def LateralFlow_Darcy(ksat, slope, hwt, length=1, width=1):
     qlat = ((ksat*slope*hwt*width)/length)

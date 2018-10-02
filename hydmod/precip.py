@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-def MeltDegreeDay_USACE(k, temp, tbase=0.0):
+def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     """
     Degree day snowmelt with US Army Corps of Engineers empirical model
 

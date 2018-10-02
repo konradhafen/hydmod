@@ -9,7 +9,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -40,7 +40,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     tsnow = 0.76
 
     #calculate melted snow
-    swe_melt = MeltDegreeDay_USACE(k, tavg, tbase)
+    swe_melt = MeltDegreeDay_USACE(tavg, k, tbase)
     ppt_snow, ppt_rain = PrecipPhase(ppt, tavg, train, tsnow)
     swe_mod, act_melt = ModelSWE(ppt_snow, swe_melt)
     ppt_in = np.add(ppt_rain, act_melt)
@@ -49,11 +49,6 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     Ra = ExtraterrestrialRadiation(DegreesToRadians(41.97), doy)
     #calculate PET
     pet = PET_Hargreaves1985(tmax, tmin, tavg, Ra)
-    print("Mean PET", np.mean(pet))
-
-    print("NSE", NSE(swe_mod, swe))
-    print("RMSE", RMSE(swe_mod, swe))
-    print("MD", MeanDifference(swe_mod, swe))
 
     print("precip in", np.sum(ppt_in))
     print("precip", np.sum(ppt))
@@ -102,7 +97,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
         sb[i] = sb[i-1] + perc[i] - bf[i]
         qlat[i] = LateralFlow_Darcy(ksat, slope, hwt[i], length=10000.0)
         qlatin[i] = 1.0*qlat[i]
-        s[i] = s[i - 1] + ppt_in[i] - et[i] - qlat[i] + qlatin[i] - perc[i]
+        s[i] = s[i-1] + ppt_in[i] - et[i] - qlat[i] + qlatin[i] - perc[i]
         if s[i] > smax:
             r[i] = s[i] - smax
             s[i] = smax
