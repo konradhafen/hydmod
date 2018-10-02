@@ -42,6 +42,32 @@ def ModelSWE(ppt_snow, swe_melt):
 
     return swe_cum, act_melt
 
+def ModelSWE_2d(ppt_snow, swe_melt):
+    """
+        Change in snow water equivalent when accounting for melt
+
+        Args:
+            ppt_snow: Precipitation that falls as snow
+            swe_melt: Snowmelt
+
+        Returns:
+            Cumulative snow water equivalent (SWE), and the actual amount of snow that melted
+
+        """
+    swe_cum = np.zeros(ppt_snow.shape, dtype=np.float32)
+    act_melt = np.zeros(swe_melt.shape, dtype=np.float32)
+    for i in range(0, ppt_snow.shape[1]):
+        for j in range(0, ppt_snow.shape[2]):
+            for k in range(1, ppt_snow.shape[0]):
+                swe_inc = swe_cum[k-1, i, j] + ppt_snow[k, i, j] - swe_melt[k, i, j]
+                if swe_inc > 0.0:
+                    swe_cum[k, i, j] = swe_inc
+                    act_melt[k, i, j] = swe_melt[k, i, j]
+                else:
+                    act_melt[k, i, j] = swe_cum[k-1, i, j]
+
+    return swe_cum, act_melt
+
 def PrecipDaily(acprecip):
     """
     Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
@@ -92,7 +118,7 @@ def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     rain = np.subtract(precip, snow)
     return snow, rain
 
-def PrecipPhase_3d(precip, temp, train=3.0, tsnow=0.0):
+def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
     """
     Determine the amount of precipitation falling as snow
 

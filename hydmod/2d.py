@@ -56,9 +56,11 @@ tsnow = 0.76
 swe_melt = MeltDegreeDay_USACE(tavg, k, tbase)
 swe_melt2d = np.apply_along_axis(MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
 ppt_snow, ppt_rain = PrecipPhase(ppt, tavg, train, tsnow)
-ppt_snow2d, ppt_rain2d = PrecipPhase_3d(ppt2d, tavg2d, train, tsnow)
-print(ppt_rain)
-print(ppt_rain2d)
+ppt_snow2d, ppt_rain2d = PrecipPhase_2d(ppt2d, tavg2d, train, tsnow)
+
 swe_mod, act_melt = ModelSWE(ppt_snow, swe_melt)
+swe_mod2d, act_melt2d = ModelSWE_2d(ppt_snow2d, swe_melt2d)
+
 ppt_in = np.add(ppt_rain, act_melt)
+ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 
