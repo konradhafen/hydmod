@@ -16,10 +16,29 @@ def ET_theta(pet, fc, wp, wc):
     """
     theta = 1.0
     if wc < 0.8*fc and wc > wp:
-        theta = (0.8*(fc - wc))/(0.8*fc-wp)
+        theta = 1.0-((0.8*fc - wc)/(0.8*fc - wp))
+        #print("s", wc, "theta", theta, "0.8*fc-wc", (0.8 * fc - wc), "0.8*fc-wp", (0.8 * fc - wp))
     elif wc <= wp:
         theta = 0.0
-    #print("wc", wc, "fc", fc, "wp", wp, "theta", theta)
+    #print("wc", wc, "fc", 0.8*fc, "wp", wp, "theta", theta)
+    return(pet*theta)
+
+def ET_theta_2d(pet, fc, wp, wc):
+    """
+    Model evapotranspiration, multiply potential ET by factor based on soil water content
+    Args:
+        pet: Potential evapotranspiration
+        fc: Field capacity
+        wp: Wilting point
+        wc: Water content
+
+    Returns:
+        ET estimate
+
+    """
+    #theta = np.ones(pet.shape)
+    theta = np.where(np.greater(wc, wp), np.where(np.less(wc, (0.8*fc)) & np.greater(wc, wp),
+                                                  np.subtract(1.0, np.divide(np.subtract(0.8*fc, wc),np.subtract(0.8*fc,wp))), 1.0), 0.0)
     return(pet*theta)
 
 def PET_Hargreaves1985(tmax, tmin, tmean, Ra):

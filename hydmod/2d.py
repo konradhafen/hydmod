@@ -72,3 +72,32 @@ Ra2d = ExtraterrestrialRadiation_2d(np.full((nrow, ncol),DegreesToRadians(41.97)
 pet = PET_Hargreaves1985(tmax, tmin, tavg, Ra)
 pet2d = PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
 
+s = np.zeros(ppt_in2d.shape)
+r = np.zeros(ppt_in2d.shape)
+hwt = np.zeros(ppt_in2d.shape)
+qlat = np.zeros(ppt_in2d.shape)
+qlatin = np.zeros(ppt_in2d.shape)
+perc = np.zeros(ppt_in2d.shape)
+sb = np.zeros(ppt_in2d.shape)
+bf = np.zeros(ppt_in2d.shape)
+q = np.zeros(ppt_in2d.shape)
+r[0,:,:] = 0 #set initial runoff
+s[0,:,:] = 0.0 #set initial storage (i.e water content)
+sb[0,:,:] = 0 #set initial aquifer storage (baseflow source)
+soildepth = 1000 #mm
+
+et = np.zeros(ppt_in2d.shape)
+ksat = 1000.0 #mm/day
+slope = 0.1
+por = 0.5
+fc = 0.3
+wp = 0.1
+ksub = 1.0 #mm/day
+alpha = 0.02
+porl = por*soildepth
+fcl = fc*soildepth
+wpl = wp*soildepth
+smax = porl #mm
+
+et[0,:,:] = ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
+s[0,:,:] = s[0,:,:] + ppt_in2d[0,:,:] - et[0,:,:]

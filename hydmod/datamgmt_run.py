@@ -9,7 +9,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -19,7 +19,7 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = math.ceil(365*8.5)#indat.shape[0]
+ndays = math.ceil(365*2.25)#indat.shape[0]
 swe = indat[1:ndays,0]*25.4
 ppt = indat[:ndays-1,5]*25.4
 
@@ -85,7 +85,7 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     smax = porl + ponddepth #mm
     print("smax", smax)
 
-    et[0] = ET_theta(pet[0], fc, wp, s[0])
+    et[0] = ET_theta(pet[0], fcl, wpl, s[0])
     s[0] = s[0] + ppt_in[0] - et[0]
     for i in range(1, ppt_in.shape[0], 1):
         et[i]= ET_theta(pet[i], fcl, wpl, s[i-1])
@@ -108,14 +108,14 @@ def RunModel(swe, ppt, tmin, tmax, tavg, doy):
     swc = np.subtract(s, p)
 
     index = np.arange(0, swe.shape[0], 1)
-    plt.subplot(4,1,1)
+    plt.subplot(2,1,1)
     plt.plot(index, s, 'r', index, swc, 'k', index, p, 'b')
-    plt.subplot(4,1,2)
+    plt.subplot(2,1,2)
     plt.plot(index, pet, 'r', index, et, 'b')
-    plt.subplot(4, 1, 3)
-    plt.plot(index, q, 'b', index, qlat, 'g', index, r, 'c')
-    plt.subplot(4,1,4)
-    plt.plot(date, bf, 'r', date, sb, 'k')
+    # plt.subplot(4, 1, 3)
+    # plt.plot(index, q, 'b', index, qlat, 'g', index, r, 'c')
+    # plt.subplot(4,1,4)
+    # plt.plot(date, bf, 'r', date, sb, 'k')
     # plt.subplot(3,1,3)
     # plt.plot(index,et,'g')
     # plt.subplot(4,1,4)
