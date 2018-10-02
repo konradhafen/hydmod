@@ -133,8 +133,6 @@ def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
 
     """
     snow = np.zeros(precip.shape)
-    print(snow.shape)
-    print(precip.shape)
     for i in np.arange(0, precip.shape[1]):
         for j in np.arange(0, precip.shape[2]):
             snow[:,i,j] = np.where(temp[:,i,j] < train, np.where(temp[:,i,j]>tsnow,

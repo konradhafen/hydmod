@@ -64,3 +64,11 @@ swe_mod2d, act_melt2d = ModelSWE_2d(ppt_snow2d, swe_melt2d)
 ppt_in = np.add(ppt_rain, act_melt)
 ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 
+#calculate ET radiation
+Ra = ExtraterrestrialRadiation(DegreesToRadians(41.97), doy)
+Ra2d = ExtraterrestrialRadiation_2d(np.full((nrow, ncol),DegreesToRadians(41.97)), doy)
+
+#calculate PET
+pet = PET_Hargreaves1985(tmax, tmin, tavg, Ra)
+pet2d = PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
+

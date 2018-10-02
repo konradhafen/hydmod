@@ -31,6 +31,33 @@ def ExtraterrestrialRadiation(phi, doy, units='radians'):
 
     return Ra*LATENT_HEAT_VAPORIZATION
 
+def ExtraterrestrialRadiation_2d(phi, doy, units='radians'):
+    """
+    Daily extraterrestrial radiation
+
+    Args:
+        phi: Latitude (degrees)
+        doy: Day of year
+        units: Angle units for phi. One of 'radians' (default) or 'degrees'.
+
+    Returns:
+        Extraterrestrial solar radiation in mm/day(numpy array)
+
+    """
+    if units == 'degrees':
+        phi = DegreesToRadians(phi)
+
+    dr = EarthSunIRD(doy)
+    delta = SolarDeclination(doy)
+    omegas = SunsetHourAngle(phi[np.newaxis, :, :], delta[:, np.newaxis, np.newaxis])
+
+    pt1 = np.multiply(((24.0*60.0)/PI)*SOLAR_CONSTANT, dr)
+    pt2 = np.multiply(np.multiply(omegas, np.sin(phi)[np.newaxis, :, :]), np.sin(delta)[:, np.newaxis, np.newaxis])
+    pt3 = np.multiply(np.multiply(np.cos(phi)[np.newaxis, :, :], np.cos(delta)[:, np.newaxis, np.newaxis]), np.sin(omegas))
+    Ra = np.multiply(pt1[:, np.newaxis, np.newaxis], np.add(pt2, pt3))
+
+    return Ra*LATENT_HEAT_VAPORIZATION
+
 def EarthSunIRD(doy):
     """
     The inverse relative distance Earth-Sun
