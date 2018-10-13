@@ -9,7 +9,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
