@@ -72,6 +72,21 @@ def EarthSunIRD(doy):
     dr = np.add(1.0, np.multiply(0.033, np.cos(np.multiply(np.divide(2*PI, 365), doy))))
     return dr
 
+def SolarAzimuthAngle(phi, lam, t, t0, units="degrees"):
+    """
+    Horizontal angle between due south and the sun
+
+    Args:
+        phi: solar elevation or altitude angle
+        lam: latitude
+        t: time of day (hours)
+        t0: time of solar noon (hours)
+        units: units for phi and lam, "degrees" (defalut) or "radians"
+
+    Returns: Solar Azimuth Angle (radians)
+
+    """
+
 def SolarDeclination(doy, units='radians'):
     """
     Solar declination angle
@@ -90,6 +105,20 @@ def SolarDeclination(doy, units='radians'):
         return RadiansToDegrees(delta)
     else:
         return delta
+
+def SolarIncidenceAngle_2d(slope, aspect, units="degrees"):
+    """
+    The angle the suns' rays make with a horizontal surface
+
+    Args:
+        slope: Slope of land surface
+        aspect: Aspect of sloping surface
+        units: "degrees" (default or "radians", units must be in radians for calculation
+
+    Returns: Solar incidence angle (radians)
+
+    """
+
 
 def SunsetHourAngle(phi, delta, units='radians'):
     """
