@@ -73,21 +73,42 @@ def EarthSunIRD(doy):
     dr = np.add(1.0, np.multiply(0.033, np.cos(np.multiply(np.divide(2*PI, 365), doy))))
     return dr
 
-def SolarAzimuthAngle(phi, lat, t=12, t0=12, units="radians"):
+def SnowAlbedo(dls):
+    """
+    Albedo of snow by days since last snowfall (dls)
+
+    Args:
+        dls: days since last snowfal
+
+    Returns: Albedo
+
+    """
+
+    alpha = np.multiply(0.738, np.power(dls, -0.1908))
+    return alpha
+
+def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units="radians"):
     """
     Horizontal angle between due south and the sun
 
     Args:
-        phi: solar elevation or altitude angle
+        phi: solar elevation or altitude angle (radians)
         lat: latitude
-        t: time of day (hours; default=12)
-        t0: time of solar noon (hours; default=12)
-        units: units for phi and lat, "radians" (default) or "degrees"
+        delta: solar declination angle (radians)
+        tod: time of day (hours; default=12)
+        tsn: time of solar noon (hours; default=12)
+        units: units for lat, "radians" (default) or "degrees"
 
     Returns: Solar Azimuth Angle (radians)
 
     """
 
+    lat = ConvertToDegrees(lat, units)
+    top = np.subtract(np.multiply(np.sin(phi), np.sin(lat)), np.sin(delta))
+    bottom = np.multiply(np.cos(phi), np.cos(lat))
+    azs = np.arccos(np.divide(top, bottom))
+    azs = np.where(tod>tsn, np.add(PI, azs), np.subtract(PI, azs))
+    return azs
 
 def SolarDeclination(doy, units='radians'):
     """
@@ -102,24 +123,7 @@ def SolarDeclination(doy, units='radians'):
 
     """
     delta = np.multiply(0.4093, np.sin(np.subtract(np.multiply(np.divide(2*PI, 365), doy), 1.39)))
-
-    if units == 'degrees':
-        return RadiansToDegrees(delta)
-    else:
-        return delta
-
-def SolarIncidenceAngle_2d(slope, aspect, units="radians"):
-    """
-    The angle the suns' rays make with a horizontal surface
-
-    Args:
-        slope: Slope of land surface
-        aspect: Aspect of sloping surface
-        units: "radians" (default) or "degrees", units must be in radians for calculation
-
-    Returns: Solar incidence angle (radians)
-
-    """
+    return ConvertToRadians(delta, units)
 
 def SolarElevationAngle(lat, delta, tod=12, tsn=12, units='radians'):
     """
@@ -136,11 +140,33 @@ def SolarElevationAngle(lat, delta, tod=12, tsn=12, units='radians'):
 
     """
 
+    lat = ConvertToDegrees(lat, units)
     pt1 = np.multiply(np.sin(lat), np.sin(delta))
     pt2 = np.multiplty(np.cos(lat), np.cos(delta))
     pt3 = np.cos(np.divide(np.multiply(PI, np.subtract(tod-tsn)),12.0))
     sinphi = np.add(pt1, np.multiply(pt2,pt3))
     return np.arcsin(sinphi)
+
+def SolarIncidenceAngle_2d(slope, aspect, az, phi, units="radians"):
+    """
+    The angle the suns' rays make with a horizontal surface
+
+    Args:
+        slope: Slope of land surface
+        aspect: Aspect of sloping surface
+        az: solar azimuth angle (radians)
+        phi: solar elevation angle (radians)
+        units: units for slope and aspect "radians" (default) or "degrees"
+
+    Returns: Solar incidence angle (radians)
+
+    """
+
+    slope = ConvertToRadians(slope, units)
+    aspect = ConvertToRadians(aspect, units)
+    i = np.arcsin(np.multiply(np.sin(np.arctan(slope)), np.multiply(np.cos(phi), np.cos(np.subtract(az, slope)))))
+    np.where(i>0.0, i, 0.0)
+    return i
 
 def SunsetHourAngle(phi, delta, units='radians'):
     """

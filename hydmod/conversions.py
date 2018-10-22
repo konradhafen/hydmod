@@ -3,6 +3,12 @@ import math
 
 PI = 3.14159
 
+def ConvertToRadians(var, units):
+    if units == "degrees":
+        return DegreesToRadians(var)
+    else:
+        return var
+
 def DayOfYear(m, d, y):
     """
     Day of year (e.g. 1-365 or 366)
