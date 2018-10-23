@@ -82,22 +82,37 @@ sb = np.zeros(ppt_in2d.shape)
 bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
 r[0,:,:] = 0 #set initial runoff
-s[0,:,:] = 0.0 #set initial storage (i.e water content)
+s[0,:,:] = 500.0 #set initial storage (i.e water content)
 sb[0,:,:] = 0 #set initial aquifer storage (baseflow source)
-soildepth = 1000 #mm
+soildepth = np.full((nrow, ncol), 1000.0) #mm
 
+et1 = np.zeros(pet.shape)
 et = np.zeros(ppt_in2d.shape)
-ksat = 1000.0 #mm/day
+ksat = np.full((nrow, ncol), 1000.0) #mm/day
 slope = 0.1
-por = 0.5
-fc = 0.3
-wp = 0.1
-ksub = 1.0 #mm/day
+por = np.full((nrow, ncol), 0.5)
+fc = np.full((nrow, ncol), 0.3)
+wp = np.full((nrow, ncol), 0.1)
+ksub = np.full((nrow, ncol), 0.1) #mm/day
 alpha = 0.02
-porl = por*soildepth
-fcl = fc*soildepth
-wpl = wp*soildepth
+porl = np.multiply(por, soildepth)
+fcl = np.multiply(fc, soildepth)
+wpl = np.multiply(wp, soildepth)
 smax = porl #mm
 
 et[0,:,:] = ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
-s[0,:,:] = s[0,:,:] + ppt_in2d[0,:,:] - et[0,:,:]
+
+for i in range(1, ppt_in2d.shape[0]):
+    et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
+    et[i,:,:] = ET_theta_2d(pet2d[i,:,:], fcl, wpl, s[i-1,:,:])
+    hwt[i,:,:] = WaterTableHeight_2d(por, fc, np.divide(s[i-1,:,:],1000.0), soildepth)
+    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:]
+    print(i)
+
+print("ppt", ppt_in2d)
+print("pet", pet)
+print("pet", pet2d)
+print("et", et1)
+print("et", et)
+print("hwt", hwt)
+print("s", s)
