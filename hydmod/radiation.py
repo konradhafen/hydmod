@@ -5,12 +5,44 @@ SOLAR_CONSTANT_MIN = 0.0820 #MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 #MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION = 0.408 #MJ/kg
 
+def DirectSolarRadiation(lat, doy, slope, aspect, dls=0.0, cf=0.0, units='radians'):
+    """
+    Direct solar radiation incident on a sloping surface
+
+    Args:
+        lat: latitude
+        doy: day of year
+        dls: days since last snow (default=0)
+        cf: forest canopy factor (default=0)
+        units: units for lat, slope and aspect; one of 'radians' (default) or 'degrees'
+
+    Returns: Solar radiation
+
+    """
+
+    lat = ConvertToRadians(lat, units)
+    slope = ConvertToRadians(slope, units)
+    aspect = ConvertToRadians(aspect, units)
+    delta = SolarDeclination(doy) #solar declination angle
+    phi = SolarElevationAngle(lat, delta) #solar elevation angle
+    azs = SolarAzimuthAngle(phi, lat, delta) #solar azimuth angle
+    qd = ExtraterrestrialRadiation(lat, doy, 'radians') #solar radiation incident on a flat surface
+    alpha = SnowAlbedo(dls) #snow albedo
+    i = SolarIncidenceAngle_2d(slope, aspect, azs, phi) #angle sun's rays make with sloping surface
+
+    pt1 = np.divide(np.sin(i), np.sin(phi))
+    pt1[pt1 <= 0] = 0.0
+    pt2 = np.multiply(qd, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
+    qs = np.multiply(pt1, pt2)
+    qs[qs < 0.1] = 0.1
+    return qs
+
 def ExtraterrestrialRadiation(phi, doy, units='radians'):
     """
     Daily extraterrestrial radiation
 
     Args:
-        phi: Latitude (degrees)
+        phi: Latitude
         doy: Day of year
         units: Angle units for phi. One of 'radians' (default) or 'degrees'.
 
@@ -110,22 +142,21 @@ def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units="radians"):
     azs = np.where(tod>tsn, np.add(PI, azs), np.subtract(PI, azs))
     return azs
 
-def SolarDeclination(doy, units='radians'):
+def SolarDeclination(doy):
     """
     Solar declination angle
 
     Args:
         doy: Day of year (1-365 or 366)
-        units One of 'radians' (default) or 'degrees'
 
     Returns:
-        Solar declination angle
+        Solar declination angle (radians)
 
     """
     delta = np.multiply(0.4093, np.sin(np.subtract(np.multiply(np.divide(2*PI, 365), doy), 1.39)))
-    return ConvertToRadians(delta, units)
+    return delta
 
-def SolarElevationAngle(lat, delta, tod=12, tsn=12, units='radians'):
+def SolarElevationAngle(lat, delta, tod=12.0, tsn=12.0, units='radians'):
     """
     The angle the sun's rays make with a horizontal surface. Defaults for tod and tsn calculate the daily value (i.e. value at solar noon)
 
