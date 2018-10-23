@@ -9,17 +9,30 @@ from osgeo import gdal
 import matplotlib.pyplot as plt
 import richdem as rd
 
-def CreateTestDEM():
+def CreateTestDEM(dempath):
+    driver = gdal.GetDriverByName("GTiff")
     dem = np.array([[10.0, 9.0, 10.0],
               [9.0, 8.0, 9.0],
               [8.0, 7.0, 8.0]])
+    ds = driver.Create(dempath, xsize=3, ysize=3, bands=1, eType=gdal.GDT_Float32)
+    geot = [1000.0, 10.0, 0, 1000.0, 0, 10.0]
+    ds.SetGeoTransform(geot)
+    ds.GetRasterBand(1).WriteArray(dem)
+    ds.GetRasterBand(1).FlushCache()
+    ds.GetRasterBand(1).SetNoDataValue(-9999.0)
+    ds = None
     return dem
 
-dem = CreateTestDEM()
+
 nrow = 3
 ncol = 3
 
-fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+dempath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testdem.tif"
+dem = CreateTestDEM(dempath)
+gdal.DEMProcessing("C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslope.tif",
+                   "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testdem.tif",
+                   'slope')
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -106,7 +119,8 @@ for i in range(1, ppt_in2d.shape[0]):
     et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
     et[i,:,:] = ET_theta_2d(pet2d[i,:,:], fcl, wpl, s[i-1,:,:])
     hwt[i,:,:] = WaterTableHeight_2d(por, fc, np.divide(s[i-1,:,:],1000.0), soildepth)
-    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:]
+    perc[i,:,:] = Percolation_2d(ksub, hwt[i,:,:])
+    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:] - perc[i,:,:]
     print(i)
 
 print("ppt", ppt_in2d)
