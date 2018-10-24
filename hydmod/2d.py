@@ -27,12 +27,13 @@ def CreateTestDEM(dempath):
 nrow = 3
 ncol = 3
 
-fn = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
-dempath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/testdem.tif"
+fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
+dempath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testdem.tif"
 dem = CreateTestDEM(dempath)
-gdal.DEMProcessing("C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslope.tif",
-                   dempath,
-                   'slope')
+gdal.DEMProcessing("C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslopedeg.tif",
+                   dempath,'slope', computeEdges=True, slopeformat='degree')
+gdal.DEMProcessing("C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslopeper.tif",
+                   dempath,'slope', computeEdges=True, slopeformat='percent')
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
