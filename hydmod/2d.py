@@ -15,7 +15,7 @@ def CreateTestDEM(dempath):
               [9.0, 8.0, 9.0],
               [8.0, 7.0, 8.0]])
     ds = driver.Create(dempath, xsize=3, ysize=3, bands=1, eType=gdal.GDT_Float32)
-    geot = [1000.0, 10.0, 0, 1000.0, 0, 10.0]
+    geot = [1000.0, 10.0, 0, 1000.0, 0, -10.0]
     ds.SetGeoTransform(geot)
     ds.GetRasterBand(1).WriteArray(dem)
     ds.GetRasterBand(1).FlushCache()
@@ -27,13 +27,14 @@ def CreateTestDEM(dempath):
 nrow = 3
 ncol = 3
 
-fn = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/snotel_klondike_0918.csv"
-dempath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testdem.tif"
+dirpath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data"
+fn = dirpath + "/snotel_klondike_0918.csv"
+dempath = dirpath + "/testdem.tif"
 dem = CreateTestDEM(dempath)
-gdal.DEMProcessing("C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslopedeg.tif",
-                   dempath,'slope', computeEdges=True, slopeformat='degree')
-gdal.DEMProcessing("C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data/testslopeper.tif",
-                   dempath,'slope', computeEdges=True, slopeformat='percent')
+gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
+                   dempath,'slope', computeEdges=True, slopeFormat='degree')
+gdal.DEMProcessing(dirpath + "/testslopeper.tif",
+                   dempath,'slope', computeEdges=True, slopeFormat='percent')
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -89,8 +90,8 @@ pet2d = PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
 s = np.zeros(ppt_in2d.shape)
 r = np.zeros(ppt_in2d.shape)
 hwt = np.zeros(ppt_in2d.shape)
-qlat = np.zeros(ppt_in2d.shape)
-qlatin = np.zeros(ppt_in2d.shape)
+qlat_out = np.zeros(ppt_in2d.shape)
+qlat_in = np.zeros(ppt_in2d.shape)
 perc = np.zeros(ppt_in2d.shape)
 sb = np.zeros(ppt_in2d.shape)
 bf = np.zeros(ppt_in2d.shape)
@@ -103,7 +104,10 @@ soildepth = np.full((nrow, ncol), 1000.0) #mm
 et1 = np.zeros(pet.shape)
 et = np.zeros(ppt_in2d.shape)
 ksat = np.full((nrow, ncol), 1000.0) #mm/day
-slope = 0.1
+slpds = gdal.Open(dirpath + "/testslopeper.tif")
+geot = slpds.GetGeoTransform()
+slope = slpds.GetRasterBand(1).ReadAsArray()
+print("slope", slope)
 por = np.full((nrow, ncol), 0.5)
 fc = np.full((nrow, ncol), 0.3)
 wp = np.full((nrow, ncol), 0.1)
@@ -121,13 +125,17 @@ for i in range(1, ppt_in2d.shape[0]):
     et[i,:,:] = ET_theta_2d(pet2d[i,:,:], fcl, wpl, s[i-1,:,:])
     hwt[i,:,:] = WaterTableHeight_2d(por, fc, np.divide(s[i-1,:,:],1000.0), soildepth)
     perc[i,:,:] = Percolation_2d(ksub, hwt[i,:,:])
-    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:] - perc[i,:,:]
+    qlat_out[i,:,:] = LateralFlow_Darcy_2d(ksat, slope, hwt[i,:,:], geot[1], geot[1])
+    qlat_in[i,:,:] = np.multiply(qlat_out[i,:,:], 1.0)
+    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:] - perc[i,:,:] - qlat_out[i,:,:] + qlat_in[i,:,:]
     print(i)
 
-print("ppt", ppt_in2d)
-print("pet", pet)
-print("pet", pet2d)
-print("et", et1)
-print("et", et)
+# print("ppt", ppt_in2d)
+# print("pet", pet)
+# print("pet", pet2d)
+# print("et", et1)
+# print("et", et)
 print("hwt", hwt)
+print("qlat out", qlat_out)
+print("qlat in", qlat_in)
 print("s", s)
