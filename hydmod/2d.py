@@ -14,7 +14,12 @@ def CreateTestDEM(dempath):
     dem = np.array([[10.0, 9.0, 10.0],
               [9.0, 8.0, 9.0],
               [8.0, 7.0, 8.0]])
-    ds = driver.Create(dempath, xsize=3, ysize=3, bands=1, eType=gdal.GDT_Float32)
+    dem = np.array([[12.0, 11.0, 10.0, 11.0, 12.0],
+                    [11.0, 10.0, 9.0, 10.0, 11.0],
+                    [10.0, 9.0, 8.0, 9.0, 10.0],
+                    [9.0, 8.0, 7.0, 8.0, 9.0],
+                    [8.0, 7.0, 6.0, 7.0, 8.0]])
+    ds = driver.Create(dempath, xsize=5, ysize=5, bands=1, eType=gdal.GDT_Float32)
     geot = [1000.0, 10.0, 0, 1000.0, 0, -10.0]
     ds.SetGeoTransform(geot)
     ds.GetRasterBand(1).WriteArray(dem)
@@ -24,17 +29,21 @@ def CreateTestDEM(dempath):
     return dem
 
 
-nrow = 3
-ncol = 3
+nrow = 5
+ncol = 5
 
-dirpath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data"
+dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
 fn = dirpath + "/snotel_klondike_0918.csv"
 dempath = dirpath + "/testdem.tif"
 dem = CreateTestDEM(dempath)
+rddem = rd.LoadGDAL(dempath, no_data=-9999)
+rdprop = rd.FlowProportions(dem=rddem, method='D4')
 gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
                    dempath,'slope', computeEdges=True, slopeFormat='degree')
 gdal.DEMProcessing(dirpath + "/testslopeper.tif",
                    dempath,'slope', computeEdges=True, slopeFormat='percent')
+gdal.DEMProcessing(dirpath + "/testaspect.tif", dempath, 'aspect',
+                   computeEdges=True, trigonometric=False, zeroForFlat=True)
 #read data
 str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
 indate = pd.DatetimeIndex(
@@ -135,7 +144,14 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("pet", pet2d)
 # print("et", et1)
 # print("et", et)
+rd.FillDepressions(rddem, in_place=True)
+accum = rd.FlowAccumulation(rddem, method="Dinf")
+dinf_fig = rd.rdShow(accum, axes=False, cmap='jet')
+accum = rd.FlowAccumulation(rddem, method="D8")
+d8_fig = rd.rdShow(accum, axes=False, cmap='jet')
 print("hwt", hwt)
 print("qlat out", qlat_out)
 print("qlat in", qlat_in)
 print("s", s)
+print("flowprop", rdprop)
+print("rddem", rddem)
