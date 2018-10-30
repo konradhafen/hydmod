@@ -1,0 +1,16 @@
+import numpy as np
+import richdem as rd
+
+def FlowProportions(dem, nodata=-9999):
+    eprop = np.zeros((8, dem.shape[0], dem.shape[1]))
+    eprop[0,:,0:-1] = (dem[:,0:-1] - dem[:,1:]) #east
+    eprop[1,0:-1,0:-1] = (dem[0:-1,0:-1] - dem[1:,1:])/np.sqrt(2.0)#southeast
+    eprop[2,0:-1,:] = (dem[0:-1,:] - dem[1:,:]) #south
+    eprop[3,1:,0:-1] = (dem[1:, 0:-1] - dem[0:-1, 1:]) / np.sqrt(2.0) #southwest
+    eprop[4,:,1:] = (dem[:, 1:] - dem[:, 0:-1]) #west
+    eprop[5,1:,1:] = (dem[1:,1:] - dem[0:-1,0:-1]) / np.sqrt(2.0) #northwest
+    eprop[6,1:,:] = (dem[1:,:] - dem[0:-1,:]) #north
+    #need to check indexing
+    eprop[7,1:,1:] = dem[1:,1:]
+
+

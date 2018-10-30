@@ -32,12 +32,12 @@ def CreateTestDEM(dempath):
 nrow = 5
 ncol = 5
 
-dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
+dirpath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data"
 fn = dirpath + "/snotel_klondike_0918.csv"
 dempath = dirpath + "/testdem.tif"
 dem = CreateTestDEM(dempath)
-rddem = rd.LoadGDAL(dempath, no_data=-9999)
-rdprop = rd.FlowProportions(dem=rddem, method='D4')
+# rddem = rd.LoadGDAL(dempath, no_data=-9999)
+# rdprop = rd.FlowProportions(dem=rddem, method='D4')
 gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
                    dempath,'slope', computeEdges=True, slopeFormat='degree')
 gdal.DEMProcessing(dirpath + "/testslopeper.tif",
@@ -153,5 +153,3 @@ print("hwt", hwt)
 print("qlat out", qlat_out)
 print("qlat in", qlat_in)
 print("s", s)
-print("flowprop", rdprop)
-print("rddem", rddem)

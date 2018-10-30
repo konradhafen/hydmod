@@ -4,8 +4,9 @@ def Baseflow(alpha, storage, beta=1):
     return alpha*storage**beta
 
 def LateralFlow_Darcy_2d(ksat, slope, hwt, length=1, width=1):
-    qlat = np.divide(np.multiply(ksat, np.multiply(np.divide(slope, 100.0), np.multiply(hwt, width))),
-                     np.multiply(width, length))
+    slp = np.divide(slope, 100.0)
+    qlat = np.divide(np.multiply(ksat, np.multiply(slp, np.multiply(hwt, np.multiply(width, 1000.0)))),
+                     np.multiply(np.multiply(width, 1000.0), np.multiply(length, 1000.0)))
     return qlat
 
 def LateralFlow_Darcy(ksat, slope, hwt, length=1, width=1):
