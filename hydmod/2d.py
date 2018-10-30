@@ -32,12 +32,12 @@ def CreateTestDEM(dempath):
 nrow = 5
 ncol = 5
 
-dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
+dirpath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data"
 fn = dirpath + "/snotel_klondike_0918.csv"
 dempath = dirpath + "/testdem.tif"
 dem = CreateTestDEM(dempath)
-rddem = rd.LoadGDAL(dempath, no_data=-9999)
-rdprop = rd.FlowProportions(dem=rddem, method='D4')
+# rddem = rd.LoadGDAL(dempath, no_data=-9999)
+# rdprop = rd.FlowProportions(dem=rddem, method='D4')
 gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
                    dempath,'slope', computeEdges=True, slopeFormat='degree')
 gdal.DEMProcessing(dirpath + "/testslopeper.tif",
@@ -144,14 +144,12 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("pet", pet2d)
 # print("et", et1)
 # print("et", et)
-rd.FillDepressions(rddem, in_place=True)
-accum = rd.FlowAccumulation(rddem, method="Dinf")
-dinf_fig = rd.rdShow(accum, axes=False, cmap='jet')
-accum = rd.FlowAccumulation(rddem, method="D8")
-d8_fig = rd.rdShow(accum, axes=False, cmap='jet')
+# rd.FillDepressions(rddem, in_place=True)
+# accum = rd.FlowAccumulation(rddem, method="Dinf")
+# dinf_fig = rd.rdShow(accum, axes=False, cmap='jet')
+# accum = rd.FlowAccumulation(rddem, method="D8")
+# d8_fig = rd.rdShow(accum, axes=False, cmap='jet')
 print("hwt", hwt)
 print("qlat out", qlat_out)
 print("qlat in", qlat_in)
 print("s", s)
-print("flowprop", rdprop)
-print("rddem", rddem)
