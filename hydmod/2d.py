@@ -3,6 +3,7 @@ from et import *
 from stats import *
 from conversions import *
 from groundwater import *
+from flow_routing import *
 from datetime import datetime
 import pandas as pd
 from osgeo import gdal
@@ -32,10 +33,10 @@ def CreateTestDEM(dempath):
 nrow = 5
 ncol = 5
 
-dirpath = "C:/Users/konrad/Desktop/Classes/WR_502_EnviroHydroModeling/data"
+dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
 fn = dirpath + "/snotel_klondike_0918.csv"
 dempath = dirpath + "/testdem.tif"
-dem = CreateTestDEM(dempath)
+demnp = CreateTestDEM(dempath)
 # rddem = rd.LoadGDAL(dempath, no_data=-9999)
 # rdprop = rd.FlowProportions(dem=rddem, method='D4')
 gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
@@ -106,7 +107,7 @@ sb = np.zeros(ppt_in2d.shape)
 bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
 r[0,:,:] = 0 #set initial runoff
-s[0,:,:] = 500.0 #set initial storage (i.e water content)
+s[0,:,:] = 300.0 #set initial storage (i.e water content)
 sb[0,:,:] = 0 #set initial aquifer storage (baseflow source)
 soildepth = np.full((nrow, ncol), 1000.0) #mm
 
@@ -127,17 +128,23 @@ fcl = np.multiply(fc, soildepth)
 wpl = np.multiply(wp, soildepth)
 smax = porl #mm
 
+fprop = FlowProportions(demnp)
 et[0,:,:] = ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
 for i in range(1, ppt_in2d.shape[0]):
-    et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
-    et[i,:,:] = ET_theta_2d(pet2d[i,:,:], fcl, wpl, s[i-1,:,:])
-    hwt[i,:,:] = WaterTableHeight_2d(por, fc, np.divide(s[i-1,:,:],1000.0), soildepth)
-    perc[i,:,:] = Percolation_2d(ksub, hwt[i,:,:])
-    qlat_out[i,:,:] = LateralFlow_Darcy_2d(ksat, slope, hwt[i,:,:], geot[1], geot[1])
-    qlat_in[i,:,:] = np.multiply(qlat_out[i,:,:], 1.0)
-    s[i,:,:] = s[i-1,:,:] - et[i,:,:] + ppt_in2d[0,:,:] - perc[i,:,:] - qlat_out[i,:,:] + qlat_in[i,:,:]
-    print(i)
+    #et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
+
+    s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
+    hwt[i, :, :] = WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth)
+    qlat_out[i, :, :] = LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
+    qlat_in[i, :, :] = RouteFlow(fprop, qlat_out[i, :, :])
+    s[i, :, :] = s[i, :, :]+ qlat_in[i,:,:] - qlat_out[i,:,:]
+    et[i, :, :] = ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])
+    s[i,:,:] = s[i,:,:] - et[i,:,:]
+    perc[i, :, :] = Percolation_2d(ksub, WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth))
+    s[i, :, :] = s[i, :, :] - perc[i,:,:]
+    r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
+    s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
 
 # print("ppt", ppt_in2d)
 # print("pet", pet)
@@ -149,7 +156,9 @@ for i in range(1, ppt_in2d.shape[0]):
 # dinf_fig = rd.rdShow(accum, axes=False, cmap='jet')
 # accum = rd.FlowAccumulation(rddem, method="D8")
 # d8_fig = rd.rdShow(accum, axes=False, cmap='jet')
+# print("ppt", ppt_in2d)
 print("hwt", hwt)
 print("qlat out", qlat_out)
 print("qlat in", qlat_in)
+print("r", r)
 print("s", s)
