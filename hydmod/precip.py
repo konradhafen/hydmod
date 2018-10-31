@@ -1,5 +1,4 @@
 import numpy as np
-import os
 
 def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     """

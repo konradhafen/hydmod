@@ -3,7 +3,18 @@ import richdem as rd
 from osgeo import gdal
 
 def FlowProportions(dem, nodata=-9999):
-    #calculate proportion of flow from a cell to neighbors
+    """
+    Proportions flow to all adjacent, downhill cells based on slope.
+
+    Args:
+        dem: digital elevation model
+        nodata: no data value for dem (default: -9999)
+
+    Returns:
+        Flow proportion to each cell
+
+    """
+    # elevation drop per distance, assumes cells are square
     eprop = np.zeros((8, dem.shape[0], dem.shape[1]))
     eprop[0, :, 0:-1] = (dem[:, 0:-1] - dem[:, 1:]) # to east
     eprop[1, 0:-1, 0:-1] = (dem[0:-1, 0:-1] - dem[1:, 1:])/np.sqrt(2.0)# to southeast
@@ -14,16 +25,27 @@ def FlowProportions(dem, nodata=-9999):
     eprop[6, 1:, :] = (dem[1:, :] - dem[0:-1, :]) # to north
     eprop[7, 1:, 0:-1] = (dem[1:,0:-1] - dem[0:-1,1:])/np.sqrt(2.0) # to northeast
 
-    eprop[eprop < 0.0] = 0.0
-    esum = np.sum(eprop, axis=0)
-    fprop = np.where(esum > 0.0, np.divide(eprop, esum), 0.0)
+
+    eprop[eprop < 0.0] = 0.0 # negative values indicate uphill cells, set to zero
+    esum = np.sum(eprop, axis=0) # sum total drop per distance
+    fprop = np.where(esum > 0.0, np.divide(eprop, esum), 0.0) # divide drop in each direction by total drop to get proportion
 
     return fprop
 
 def RouteFlow(flowprop, flow):
-    rflow = np.zeros((flowprop.shape[1], flowprop.shape[2]))
-    #from west
-    flowdec = flow.copy()
+    """
+    Routes flow to adjacent cells based on flow proportion.
+
+    Args:
+        flowprop: flow proportions
+        flow: amount of flow route
+
+    Returns:
+        routed flow
+
+    """
+    rflow = np.zeros((flowprop.shape[1], flowprop.shape[2])) #routed flow
+    flowdec = flow.copy() #decrement the total flow, this is a mass balance check
     rflow[:, 1:] = rflow[:, 1:] + flowprop[0, :, 0:-1] * flow[:, 0:-1]  # flow from west
     flowdec[:, 0:-1] = flowdec[:, 0:-1] - flowprop[0, :, 0:-1] * flow[:, 0:-1]
     rflow[1:, 1:] = rflow[1:, 1:] + flowprop[1, 0:-1, 0:-1] * flow[0:-1, 0:-1]  # flow from northwest
@@ -42,16 +64,7 @@ def RouteFlow(flowprop, flow):
     flowdec[1:, 0:-1] = flowdec[1:, 0:-1] - flowprop[7, 1:, 0:-1] * flow[1:, 0:-1]
     print("flow not routed", np.sum(flowdec))
 
-    return rflow
+    return rflow, flowdec
 
-# dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
-# dempath = dirpath + "/testdem.tif"
-# demds = gdal.Open(dempath)
-# demnp = demds.GetRasterBand(1).ReadAsArray()
-#
-# print(demnp)
-# print("fprops", FlowProportions(demnp))
-# print("routed", RouteFlow(FlowProportions(demnp), np.ones((5,5))))
-# print("sum routed", np.sum(RouteFlow(FlowProportions(demnp), np.ones((5,5)))))
 
 

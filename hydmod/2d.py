@@ -1,12 +1,21 @@
-from precip import *
-from et import *
-from stats import *
-from conversions import *
-from groundwater import *
-from flow_routing import *
+import hydmod.precip as precip
+import hydmod.et as et
+import hydmod.stats as stats
+import hydmod.conversions as conv
+import hydmod.groundwater as gw
+import hydmod.flow_routing as fr
+import hydmod.radiation as rad
+# from precip import *
+# from et import *
+# from stats import *
+# from conversions import *
+# from groundwater import *
+# from flow_routing import *
 from datetime import datetime
 import pandas as pd
 from osgeo import gdal
+import numpy as np
+import math
 import matplotlib.pyplot as plt
 import richdem as rd
 
@@ -51,7 +60,7 @@ indate = pd.DatetimeIndex(
     np.genfromtxt(fn, delimiter=",", skip_header=1, converters={0: str2date}, usecols=(0)))
 indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 
-doy = DayOfYear(indate.month.values, indate.day.values, indate.year.values)
+doy = conv.DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
 ndays = math.ceil(5)#indat.shape[0]
@@ -78,24 +87,18 @@ train = 2.22
 tsnow = 0.76
 
 #calculate melted snow
-swe_melt = MeltDegreeDay_USACE(tavg, k, tbase)
-swe_melt2d = np.apply_along_axis(MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
-ppt_snow, ppt_rain = PrecipPhase(ppt, tavg, train, tsnow)
-ppt_snow2d, ppt_rain2d = PrecipPhase_2d(ppt2d, tavg2d, train, tsnow)
+swe_melt2d = np.apply_along_axis(precip.MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
+ppt_snow2d, ppt_rain2d = precip.PrecipPhase_2d(ppt2d, tavg2d, train, tsnow)
 
-swe_mod, act_melt = ModelSWE(ppt_snow, swe_melt)
-swe_mod2d, act_melt2d = ModelSWE_2d(ppt_snow2d, swe_melt2d)
+swe_mod2d, act_melt2d = precip.ModelSWE_2d(ppt_snow2d, swe_melt2d)
 
-ppt_in = np.add(ppt_rain, act_melt)
 ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 
 #calculate ET radiation
-Ra = ExtraterrestrialRadiation(DegreesToRadians(41.97), doy)
-Ra2d = ExtraterrestrialRadiation_2d(np.full((nrow, ncol),DegreesToRadians(41.97)), doy)
+Ra2d = rad.ExtraterrestrialRadiation_2d(np.full((nrow, ncol),conv.DegreesToRadians(41.97)), doy)
 
 #calculate PET
-pet = PET_Hargreaves1985(tmax, tmin, tavg, Ra)
-pet2d = PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
+pet2d = et.PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
 
 s = np.zeros(ppt_in2d.shape)
 r = np.zeros(ppt_in2d.shape)
@@ -111,8 +114,7 @@ s[0,:,:] = 300.0 #set initial storage (i.e water content)
 sb[0,:,:] = 0 #set initial aquifer storage (baseflow source)
 soildepth = np.full((nrow, ncol), 1000.0) #mm
 
-et1 = np.zeros(pet.shape)
-et = np.zeros(ppt_in2d.shape)
+aet = np.zeros(ppt_in2d.shape)
 ksat = np.full((nrow, ncol), 1000.0) #mm/day
 slpds = gdal.Open(dirpath + "/testslopeper.tif")
 geot = slpds.GetGeoTransform()
@@ -128,20 +130,20 @@ fcl = np.multiply(fc, soildepth)
 wpl = np.multiply(wp, soildepth)
 smax = porl #mm
 
-fprop = FlowProportions(demnp)
-et[0,:,:] = ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
+fprop = fr.FlowProportions(demnp)
+aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
 for i in range(1, ppt_in2d.shape[0]):
     #et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
 
     s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
-    hwt[i, :, :] = WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth)
-    qlat_out[i, :, :] = LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
-    qlat_in[i, :, :] = RouteFlow(fprop, qlat_out[i, :, :])
-    s[i, :, :] = s[i, :, :]+ qlat_in[i,:,:] - qlat_out[i,:,:]
-    et[i, :, :] = ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])
-    s[i,:,:] = s[i,:,:] - et[i,:,:]
-    perc[i, :, :] = Percolation_2d(ksub, WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth))
+    hwt[i, :, :] = gw.WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth)
+    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
+    qlat_in[i, :, :], qlat_nr = fr.RouteFlow(fprop, qlat_out[i, :, :])
+    s[i, :, :] = s[i, :, :] + qlat_in[i,:,:] - qlat_out[i,:,:]
+    aet[i, :, :] = et.ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])
+    s[i,:,:] = s[i,:,:] - aet[i,:,:]
+    perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth))
     s[i, :, :] = s[i, :, :] - perc[i,:,:]
     r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
