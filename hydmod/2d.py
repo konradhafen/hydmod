@@ -63,9 +63,9 @@ indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
 doy = conv.DayOfYear(indate.month.values, indate.day.values, indate.year.values)
 
 #convert to mm
-ndays = math.ceil(5)#indat.shape[0]
-swe = indat[1:ndays,0]*25.4
-ppt = indat[:ndays-1,5]*25.4
+ndays = math.ceil(365)#indat.shape[0]
+swe = indat[1:ndays,0]*0.0254 #m
+ppt = indat[:ndays-1,5]*0.0254 #m
 ppt2d = np.reshape(np.repeat(ppt, nrow*ncol), (ndays-1, nrow, ncol))
 
 doy = doy[:ndays-1]
@@ -98,7 +98,7 @@ ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 Ra2d = rad.ExtraterrestrialRadiation_2d(np.full((nrow, ncol),conv.DegreesToRadians(41.97)), doy)
 
 #calculate PET
-pet2d = et.PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)
+pet2d = et.PET_Hargreaves1985(tmax2d, tmin2d, tavg2d, Ra2d)/1000.0 # m/day
 
 s = np.zeros(ppt_in2d.shape)
 r = np.zeros(ppt_in2d.shape)
@@ -109,41 +109,40 @@ perc = np.zeros(ppt_in2d.shape)
 sb = np.zeros(ppt_in2d.shape)
 bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
-r[0,:,:] = 0 #set initial runoff
-s[0,:,:] = 300.0 #set initial storage (i.e water content)
-sb[0,:,:] = 0 #set initial aquifer storage (baseflow source)
-soildepth = np.full((nrow, ncol), 1000.0) #mm
+r[0,:,:] = 0 # set initial runoff m
+s[0,:,:] = 0.3 # set initial storage (i.e water content) m
+sb[0,:,:] = 0 # set initial aquifer storage (baseflow source) m
+soildepth = np.full((nrow, ncol), 1.0) #depth of soil profile m
 
 aet = np.zeros(ppt_in2d.shape)
-ksat = np.full((nrow, ncol), 1000.0) #mm/day
+ksat = np.full((nrow, ncol), 1.0) # m/day
 slpds = gdal.Open(dirpath + "/testslopeper.tif")
 geot = slpds.GetGeoTransform()
 slope = slpds.GetRasterBand(1).ReadAsArray()
-print("slope", slope)
+# print("slope", slope)
 por = np.full((nrow, ncol), 0.5)
 fc = np.full((nrow, ncol), 0.3)
 wp = np.full((nrow, ncol), 0.1)
-ksub = np.full((nrow, ncol), 0.1) #mm/day
+ksub = np.full((nrow, ncol), 0.001) # m/day
 alpha = 0.02
 porl = np.multiply(por, soildepth)
 fcl = np.multiply(fc, soildepth)
 wpl = np.multiply(wp, soildepth)
-smax = porl #mm
+smax = porl
+qlat_nr = np.zeros(ndays)
 
 fprop = fr.FlowProportions(demnp)
 aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
 for i in range(1, ppt_in2d.shape[0]):
-    #et1[i] = ET_theta(pet[i], fcl[1,1], wpl[1,1], s[i-1,1,1])
-
     s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
-    hwt[i, :, :] = gw.WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth)
+    hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
     qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
-    qlat_in[i, :, :], qlat_nr = fr.RouteFlow(fprop, qlat_out[i, :, :])
+    qlat_in[i, :, :], qlat_nr[i] = fr.RouteFlow(fprop, qlat_out[i, :, :])
     s[i, :, :] = s[i, :, :] + qlat_in[i,:,:] - qlat_out[i,:,:]
     aet[i, :, :] = et.ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])
     s[i,:,:] = s[i,:,:] - aet[i,:,:]
-    perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight_2d(por, fc, np.divide(s[i, :, :], 1000.0), soildepth))
+    perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], 1.0), soildepth))
     s[i, :, :] = s[i, :, :] - perc[i,:,:]
     r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
@@ -159,8 +158,14 @@ for i in range(1, ppt_in2d.shape[0]):
 # accum = rd.FlowAccumulation(rddem, method="D8")
 # d8_fig = rd.rdShow(accum, axes=False, cmap='jet')
 # print("ppt", ppt_in2d)
-print("hwt", hwt)
-print("qlat out", qlat_out)
-print("qlat in", qlat_in)
-print("r", r)
-print("s", s)
+# print("hwt", hwt)
+# print("qlat out", qlat_out)
+# print("qlat in", qlat_in)
+# print("r", r)
+# print("s", s)
+plt.plot(date, qlat_in[:,4,2], 'g', date, r[:,4,2], 'c', date, (r[:,4,2]+qlat_in[:,4,2]), 'b')
+plt.show()
+plt.plot(date, hwt[:,4,2], 'b')
+plt.show()
+plt.plot(date, s[:,4,2], 'b')
+plt.show()

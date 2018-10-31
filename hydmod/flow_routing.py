@@ -46,6 +46,7 @@ def RouteFlow(flowprop, flow):
     """
     rflow = np.zeros((flowprop.shape[1], flowprop.shape[2])) #routed flow
     flowdec = flow.copy() #decrement the total flow, this is a mass balance check
+
     rflow[:, 1:] = rflow[:, 1:] + flowprop[0, :, 0:-1] * flow[:, 0:-1]  # flow from west
     flowdec[:, 0:-1] = flowdec[:, 0:-1] - flowprop[0, :, 0:-1] * flow[:, 0:-1]
     rflow[1:, 1:] = rflow[1:, 1:] + flowprop[1, 0:-1, 0:-1] * flow[0:-1, 0:-1]  # flow from northwest
@@ -62,9 +63,8 @@ def RouteFlow(flowprop, flow):
     flowdec[1:, :] = flowdec[1:, :] - flowprop[6, 1:, :] * flow[1:, :]
     rflow[0:-1, 1:] = rflow[0:-1, 1:] + flowprop[7, 1:, 0:-1] * flow[1:, 0:-1]  # flow from southwest
     flowdec[1:, 0:-1] = flowdec[1:, 0:-1] - flowprop[7, 1:, 0:-1] * flow[1:, 0:-1]
-    print("flow not routed", np.sum(flowdec))
 
-    return rflow, flowdec
+    return rflow, np.sum(flowdec)
 
 
 
