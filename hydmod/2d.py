@@ -112,7 +112,7 @@ bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
 r[0,:,:] = 0 # set initial runoff m
 ra[0,:,:] = 0
-s[0,:,:] = 0.3 # set initial storage (i.e water content) m
+s[0,:,:] = 0.1 # set initial storage (i.e water content) m
 sb[0,:,:] = 0 # set initial aquifer storage (baseflow source) m
 soildepth = np.full((nrow, ncol), 1.0) #depth of soil profile m
 
@@ -147,10 +147,11 @@ for i in range(1, ppt_in2d.shape[0]):
     perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], 1.0), soildepth))
     s[i, :, :] = s[i, :, :] - perc[i,:,:]
     r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
-    weights = r[i,:,:]
-    print(weights)
-    intm = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='D8', weights=r[i,:,:])
-    ra[i, :, :] = intm
+    ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i,:,:])
+    # print(intm)
+    # print('r',r[i, :, :])
+    # print('ppt', ppt_in2d[i,:,:])
+
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
 
 # print("ppt", ppt_in2d)
@@ -169,9 +170,10 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("qlat in", qlat_in)
 # print("r", r)
 # print("s", s)
-plt.plot(date, qlat_in[:,4,2], 'g', date, ra[:,4,2], 'c', date, (r[:,4,2]+qlat_in[:,4,2]), 'b')
+# print('ra', ra)
+plt.plot(date, qlat_in[:,5,3], 'g', date, ra[:,5,3], 'c', date, (ra[:,5,3]+qlat_in[:,5,3]), 'b')
 plt.show()
-plt.plot(date, hwt[:,4,2], 'b')
+plt.plot(date, hwt[:,5,3], 'b')
 plt.show()
-plt.plot(date, s[:,4,2], 'b')
+plt.plot(date, s[:,5,3], 'b')
 plt.show()

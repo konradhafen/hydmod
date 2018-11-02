@@ -66,5 +66,19 @@ def RouteFlow(flowprop, flow):
 
     return rflow, np.sum(flowdec)
 
+def RouteFlow_rd(dempath, flow, method='Dinf'):
+    """
+    Use richdem to route flow
+    Args:
+        dempath: path to DEM (.tif)
+        flow: amount of flow to route
+        method: richdem routing method (default: 'Dinf')
+
+    Returns:
+        routed flow
+
+    """
+    rdprop = rd.FlowProportions(rd.LoadGDAL(dempath), method=method)
+
 
 
