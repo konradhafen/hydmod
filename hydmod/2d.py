@@ -133,7 +133,7 @@ aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 for i in range(1, ppt_in2d.shape[0]):
     s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
     hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
-    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
+    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, np.divide(slope, 100.0), hwt[i, :, :], geot[1], geot[1])
     qlat_in[i, :, :], qlat_nr[i] = fr.RouteFlow(fprop, qlat_out[i, :, :])
     s[i, :, :] = s[i, :, :] + qlat_in[i,:,:] - qlat_out[i,:,:]
     aet[i, :, :] = et.ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])

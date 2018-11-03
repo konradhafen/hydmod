@@ -18,8 +18,7 @@ def LateralFlow_Darcy_2d(ksat, slope, hwt, length=1, width=1, convf=1.0):
     Returns:
 
     """
-    slp = np.divide(slope, 100.0)
-    qlat = np.divide(np.multiply(ksat, np.multiply(slp, np.multiply(hwt, np.multiply(width, convf)))),
+    qlat = np.divide(np.multiply(ksat, np.multiply(slope, np.multiply(hwt, np.multiply(width, convf)))),
                      np.multiply(np.multiply(width, convf), np.multiply(length, convf)))
     return qlat
 

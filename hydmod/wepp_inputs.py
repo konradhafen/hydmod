@@ -19,23 +19,28 @@ dempath = 'dem/dem.tif'
 demds = gdal.Open(dempath)
 geot = demds.GetGeoTransform()
 demnp = demds.GetRasterBand(1).ReadAsArray()
+nrow = demds.RasterYSize
+ncol = demds.RasterXSize
+demds = None
+demfil = rd.FillDepressions(rd.LoadGDAL(dempath))
+rdaccum = rd.FlowAccumulation(demfil, method='Dinf')
+rd.rdShow(rdaccum, cmap='jet')
+print ("max", np.where(rdaccum==np.max(rdaccum)))
 slpds = gdal.Open('export/arcmap/gtiffs/FVSLOP.tif')
 slpnp = slpds.GetRasterBand(1).ReadAsArray()
 aspds = gdal.Open('export/arcmap/gtiffs/TASPEC.tif')
 aspnp = aspds.GetRasterBand(1).ReadAsArray()
 clipath = 'climate/265191.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
-d = clidat[:,0]
-m = clidat[:,1]
-y = clidat[:,2]
-ppt = clidat[:,3]
-tmax = clidat[:,7]
-tmin = clidat[:,8]
 
-nrow = demds.RasterYSize
-ncol = demds.RasterXSize
+ndays = 9
+d = clidat[:ndays-1,0]
+m = clidat[:ndays-1,1]
+y = clidat[:ndays-1,2]
+ppt = clidat[:ndays-1,3] * 0.0254
+tmax = clidat[:ndays-1,7]
+tmin = clidat[:ndays-1,8]
 
-ndays = 365
 doy = conv.DayOfYear(m, d, y)
 ppt2d = np.reshape(np.repeat(ppt, nrow*ncol), (ndays-1, nrow, ncol))
 tmin2d = np.reshape(np.repeat(tmin, nrow*ncol), (ndays-1, nrow, ncol))
@@ -72,13 +77,13 @@ bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
 r[0,:,:] = 0 # set initial runoff m
 ra[0,:,:] = 0
-s[0,:,:] = 0.3 # set initial storage (i.e water content) m
+s[0,:,:] = 0.5 # set initial storage (i.e water content) m
 sb[0,:,:] = 0 # set initial aquifer storage (baseflow source) m
 soildepth = np.full((nrow, ncol), 1.0) #depth of soil profile m
 
 aet = np.zeros(ppt_in2d.shape)
 ksat = np.full((nrow, ncol), 1.0) # m/day
-slpds = gdal.Open(dirpath + "/testslopeper.tif")
+slpds = gdal.Open('export/arcmap/gtiffs/FVSLOP.tif')
 geot = slpds.GetGeoTransform()
 slope = slpds.GetRasterBand(1).ReadAsArray()
 # print("slope", slope)
@@ -93,7 +98,7 @@ wpl = np.multiply(wp, soildepth)
 smax = porl
 qlat_nr = np.zeros(ndays)
 
-fprop = fr.FlowProportions(demnp)
+fprop = fr.FlowProportions(demfil)
 aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
 for i in range(1, ppt_in2d.shape[0]):
@@ -107,9 +112,9 @@ for i in range(1, ppt_in2d.shape[0]):
     perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], 1.0), soildepth))
     s[i, :, :] = s[i, :, :] - perc[i,:,:]
     r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
-    ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='D8', weights=r[i,:,:])
-    # ra[i, :, :] = intm
+    ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i,:,:])
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
+    #rd.rdShow(rd.rdarray(qlat_in[i, :, :], no_data=-9999), cmap='jet')
 
 # print("ppt", ppt_in2d)
 # print("pet", pet)
@@ -127,10 +132,18 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("qlat in", qlat_in)
 # print("r", r)
 # print("s", s)
-plt.plot(date, qlat_in[:,4,2], 'g', date, ra[:,4,2], 'c', date, (r[:,4,2]+qlat_in[:,4,2]), 'b')
+outrow = 12
+outcol = 1
+print(ppt_in2d)
+print('qlat', qlat_in[:,outrow, outcol]-qlat_out[:,outrow, outcol])
+print('runoff accum', ra[:,outrow, outcol])
+print('flow', ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol]))
+plt.plot(doy, qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol], 'g',
+         doy, ra[:,outrow,outcol], 'c',
+         doy, (ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol])), 'b')
 plt.show()
-plt.plot(date, hwt[:,4,2], 'b')
-plt.show()
-plt.plot(date, s[:,4,2], 'b')
-plt.show()
+# plt.plot(doy, hwt[:,outrow,outcol], 'b')
+# plt.show()
+# plt.plot(doy, s[:,outrow,outcol], 'b')
+# plt.show()
 
