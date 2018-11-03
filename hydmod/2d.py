@@ -5,12 +5,6 @@ import hydmod.conversions as conv
 import hydmod.groundwater as gw
 import hydmod.flow_routing as fr
 import hydmod.radiation as rad
-# from precip import *
-# from et import *
-# from stats import *
-# from conversions import *
-# from groundwater import *
-# from flow_routing import *
 from datetime import datetime
 import pandas as pd
 from osgeo import gdal
