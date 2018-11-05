@@ -3,6 +3,7 @@ import numpy as np
 def Baseflow(alpha, storage, beta=1):
     return alpha*storage**beta
 
+
 def LateralFlow_Darcy_2d(ksat, slope, hwt, length=1, width=1, convf=1.0):
     """
     2-dimensional darcy flow
@@ -22,12 +23,15 @@ def LateralFlow_Darcy_2d(ksat, slope, hwt, length=1, width=1, convf=1.0):
                      np.multiply(np.multiply(width, convf), np.multiply(length, convf)))
     return qlat
 
+
 def LateralFlow_Darcy(ksat, slope, hwt, length=1, width=1):
     qlat = ((ksat*slope*hwt*width)/(width*length))
     return qlat
 
+
 def Percolation(ksub):
     return ksub
+
 
 def Percolation_2d(ksub, hwt):
     perc = np.where(hwt > 0.0, ksub, 0.0)
