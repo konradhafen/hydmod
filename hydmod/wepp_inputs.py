@@ -135,12 +135,12 @@ for i in range(1, ppt_in2d.shape[0]):
 outrow = 12
 outcol = 1
 print(ppt_in2d)
-print('qlat', qlat_in[:,outrow, outcol]-qlat_out[:,outrow, outcol])
-print('runoff accum', ra[:,outrow, outcol])
-print('flow', ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol]))
-plt.plot(doy, qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol], 'g',
-         doy, ra[:,outrow,outcol], 'c',
-         doy, (ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol])), 'b')
+print('qlat', qlat_in[:, outrow, outcol]-qlat_out[:,outrow, outcol])
+print('runoff accum', ra[:, outrow, outcol])
+print('flow', ra[:, outrow,outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol]))
+plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
+         doy, ra[:, outrow, outcol], 'c',
+         doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
 plt.show()
 # plt.plot(doy, hwt[:,outrow,outcol], 'b')
 # plt.show()

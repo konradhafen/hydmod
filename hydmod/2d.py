@@ -165,9 +165,13 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("r", r)
 # print("s", s)
 # print('ra', ra)
-plt.plot(date, qlat_in[:,5,3], 'g', date, ra[:,5,3], 'c', date, (ra[:,5,3]+qlat_in[:,5,3]), 'b')
+outrow = 4
+outcol = 2
+plt.plot(date, qlat_in[:, outrow, outcol], 'g',
+         date, ra[:, outrow, outcol], 'c',
+         date, (ra[:, outrow, outcol]+qlat_in[:, outrow, outcol]), 'b')
 plt.show()
-plt.plot(date, hwt[:,5,3], 'b')
+plt.plot(date, hwt[:, outrow, outcol], 'b')
 plt.show()
-plt.plot(date, s[:,5,3], 'b')
+plt.plot(date, s[:, outrow, outcol], 'b')
 plt.show()
