@@ -12,80 +12,51 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import richdem as rd
+import os
 
-def CreateTestDEM(dempath):
-    driver = gdal.GetDriverByName("GTiff")
-    dem = np.array([[10.0, 9.0, 10.0],
-              [9.0, 8.0, 9.0],
-              [8.0, 7.0, 8.0]])
-    dem = np.array([[12.0, 11.0, 10.0, 11.0, 12.0],
-                    [11.0, 10.0, 9.0, 10.0, 11.0],
-                    [10.0, 9.0, 8.0, 9.0, 10.0],
-                    [9.0, 8.0, 7.0, 8.0, 9.0],
-                    [8.0, 7.0, 6.0, 7.0, 8.0]])
-    ds = driver.Create(dempath, xsize=5, ysize=5, bands=1, eType=gdal.GDT_Float32)
-    geot = [1000.0, 10.0, 0, 1000.0, 0, -10.0]
-    ds.SetGeoTransform(geot)
-    ds.GetRasterBand(1).WriteArray(dem)
-    ds.GetRasterBand(1).FlushCache()
-    ds.GetRasterBand(1).SetNoDataValue(-9999.0)
-    ds = None
-    return dem
+os.chdir('C:/temp/smr/')
+dempath = 'dem/dem.tif'
+demds = gdal.Open(dempath)
+geot = demds.GetGeoTransform()
+demnp = demds.GetRasterBand(1).ReadAsArray()
+nrow = demds.RasterYSize
+ncol = demds.RasterXSize
+demds = None
+demfil = rd.FillDepressions(rd.LoadGDAL(dempath))
+rdaccum = rd.FlowAccumulation(demfil, method='Dinf')
+rd.rdShow(rdaccum, cmap='jet')
+print ("max", np.where(rdaccum==np.max(rdaccum)))
+slpds = gdal.Open('export/arcmap/gtiffs/FVSLOP.tif')
+slpnp = slpds.GetRasterBand(1).ReadAsArray()
+aspds = gdal.Open('export/arcmap/gtiffs/TASPEC.tif')
+aspnp = aspds.GetRasterBand(1).ReadAsArray()
+clipath = 'climate/265191.cli'
+clidat = np.genfromtxt(clipath, skip_header=15)
 
+ndays = 9
+d = clidat[:ndays-1,0]
+m = clidat[:ndays-1,1]
+y = clidat[:ndays-1,2]
+ppt = clidat[:ndays-1,3] * 0.0254
+tmax = clidat[:ndays-1,7]
+tmin = clidat[:ndays-1,8]
 
-nrow = 5
-ncol = 5
-
-dirpath = "C:/Users/khafe/Desktop/Classes/WR_502_EnviroHydroModeling/data"
-fn = dirpath + "/snotel_klondike_0918.csv"
-dempath = dirpath + "/testdem.tif"
-demnp = CreateTestDEM(dempath)
-# rddem = rd.LoadGDAL(dempath, no_data=-9999)
-# rdprop = rd.FlowProportions(dem=rddem, method='D4')
-gdal.DEMProcessing(dirpath + "/testslopedeg.tif",
-                   dempath,'slope', computeEdges=True, slopeFormat='degree')
-gdal.DEMProcessing(dirpath + "/testslopeper.tif",
-                   dempath,'slope', computeEdges=True, slopeFormat='percent')
-gdal.DEMProcessing(dirpath + "/testaspect.tif", dempath, 'aspect',
-                   computeEdges=True, trigonometric=False, zeroForFlat=True)
-#read data
-str2date = lambda x: datetime.strptime(x.decode("utf-8"), '%m/%d/%Y')
-indate = pd.DatetimeIndex(
-    np.genfromtxt(fn, delimiter=",", skip_header=1, converters={0: str2date}, usecols=(0)))
-indat = np.genfromtxt(fn, delimiter=",", skip_header=1, usecols=(1,2,3,4,5,6))
-
-doy = conv.DayOfYear(indate.month.values, indate.day.values, indate.year.values)
-
-#convert to mm
-ndays = math.ceil(365)#indat.shape[0]
-swe = indat[1:ndays,0]*0.0254 #m
-ppt = indat[:ndays-1,5]*0.0254 #m
+doy = conv.DayOfYear(m, d, y)
 ppt2d = np.reshape(np.repeat(ppt, nrow*ncol), (ndays-1, nrow, ncol))
-
-doy = doy[:ndays-1]
-date = indate[:ndays-1]
-
-#convert to degrees C
-tmin = np.multiply(np.subtract(indat[:ndays-1,3],32.0), (5.0/9.0))
-tmax = np.multiply(np.subtract(indat[:ndays-1,2],32.0), (5.0/9.0))
-tavg = np.multiply(np.subtract(indat[:ndays-1,4],32.0), (5.0/9.0))
-
 tmin2d = np.reshape(np.repeat(tmin, nrow*ncol), (ndays-1, nrow, ncol))
 tmax2d = np.reshape(np.repeat(tmax, nrow*ncol), (ndays-1, nrow, ncol))
-tavg2d = np.reshape(np.repeat(tavg, nrow*ncol), (ndays-1, nrow, ncol))
+tavg2d = 0.5 * (tmin2d + tmax2d)
 
 #from optimization in R
-k = 1.1456
-tbase = 4.77
-train = 2.22
-tsnow = 0.76
+k = 1.16
+tbase = 0.
+train = 3.
+tsnow = 0.
 
 #calculate melted snow
 swe_melt2d = np.apply_along_axis(precip.MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
 ppt_snow2d, ppt_rain2d = precip.PrecipPhase_2d(ppt2d, tavg2d, train, tsnow)
-
 swe_mod2d, act_melt2d = precip.ModelSWE_2d(ppt_snow2d, swe_melt2d)
-
 ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 
 #calculate ET radiation
@@ -106,13 +77,13 @@ bf = np.zeros(ppt_in2d.shape)
 q = np.zeros(ppt_in2d.shape)
 r[0,:,:] = 0 # set initial runoff m
 ra[0,:,:] = 0
-s[0,:,:] = 0.1 # set initial storage (i.e water content) m
+s[0,:,:] = 0.5 # set initial storage (i.e water content) m
 sb[0,:,:] = 0 # set initial aquifer storage (baseflow source) m
 soildepth = np.full((nrow, ncol), 1.0) #depth of soil profile m
 
 aet = np.zeros(ppt_in2d.shape)
 ksat = np.full((nrow, ncol), 1.0) # m/day
-slpds = gdal.Open(dirpath + "/testslopeper.tif")
+slpds = gdal.Open('export/arcmap/gtiffs/FVSLOP.tif')
 geot = slpds.GetGeoTransform()
 slope = slpds.GetRasterBand(1).ReadAsArray()
 # print("slope", slope)
@@ -127,13 +98,13 @@ wpl = np.multiply(wp, soildepth)
 smax = porl
 qlat_nr = np.zeros(ndays)
 
-fprop = fr.FlowProportions(demnp)
+fprop = fr.FlowProportions(demfil)
 aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
 for i in range(1, ppt_in2d.shape[0]):
     s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
     hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
-    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, np.divide(slope, 100.0), hwt[i, :, :], geot[1], geot[1])
+    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slope, hwt[i, :, :], geot[1], geot[1])
     qlat_in[i, :, :], qlat_nr[i] = fr.RouteFlow(fprop, qlat_out[i, :, :])
     s[i, :, :] = s[i, :, :] + qlat_in[i,:,:] - qlat_out[i,:,:]
     aet[i, :, :] = et.ET_theta_2d(pet2d[i, :, :], fcl, wpl, s[i - 1, :, :])
@@ -142,11 +113,8 @@ for i in range(1, ppt_in2d.shape[0]):
     s[i, :, :] = s[i, :, :] - perc[i,:,:]
     r[i, :, :] = np.where(s[i, :, :] > (soildepth*por), (s[i, :, :] - (soildepth*por)), 0.0)
     ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i,:,:])
-    # print(intm)
-    # print('r',r[i, :, :])
-    # print('ppt', ppt_in2d[i,:,:])
-
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
+    #rd.rdShow(rd.rdarray(qlat_in[i, :, :], no_data=-9999), cmap='jet')
 
 # print("ppt", ppt_in2d)
 # print("pet", pet)
@@ -164,10 +132,18 @@ for i in range(1, ppt_in2d.shape[0]):
 # print("qlat in", qlat_in)
 # print("r", r)
 # print("s", s)
-# print('ra', ra)
-plt.plot(date, qlat_in[:,5,3], 'g', date, ra[:,5,3], 'c', date, (ra[:,5,3]+qlat_in[:,5,3]), 'b')
+outrow = 12
+outcol = 1
+print(ppt_in2d)
+print('qlat', qlat_in[:,outrow, outcol]-qlat_out[:,outrow, outcol])
+print('runoff accum', ra[:,outrow, outcol])
+print('flow', ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol]))
+plt.plot(doy, qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol], 'g',
+         doy, ra[:,outrow,outcol], 'c',
+         doy, (ra[:,outrow,outcol]+(qlat_in[:,outrow,outcol]-qlat_out[:,outrow, outcol])), 'b')
 plt.show()
-plt.plot(date, hwt[:,5,3], 'b')
-plt.show()
-plt.plot(date, s[:,5,3], 'b')
-plt.show()
+# plt.plot(doy, hwt[:,outrow,outcol], 'b')
+# plt.show()
+# plt.plot(doy, s[:,outrow,outcol], 'b')
+# plt.show()
+
