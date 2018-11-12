@@ -1,5 +1,9 @@
 import numpy as np
 
+def DaysSinceLastSnow(dates, snow):
+    return
+
+
 def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     """
     Degree day snowmelt with US Army Corps of Engineers empirical model
@@ -16,6 +20,7 @@ def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     melt = k*(temp-tbase)
     melt[melt < 0.0] = 0.0
     return melt
+
 
 def ModelSWE(ppt_snow, swe_melt):
     """
@@ -40,6 +45,7 @@ def ModelSWE(ppt_snow, swe_melt):
             act_melt[i] = swe_cum[i-1]
 
     return swe_cum, act_melt
+
 
 def ModelSWE_2d(ppt_snow, swe_melt):
     """
@@ -67,6 +73,7 @@ def ModelSWE_2d(ppt_snow, swe_melt):
 
     return swe_cum, act_melt
 
+
 def PrecipDaily(acprecip):
     """
     Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
@@ -79,15 +86,16 @@ def PrecipDaily(acprecip):
     """
 
     acprecip = np.insert(acprecip, 0, 0)
-    return(np.ediff1d(acprecip))
+    return np.ediff1d(acprecip)
 
-def PrecipInput(ppt_rain, swe_melt):
+
+def PrecipInput(ppt_rain, swe, swe_melt):
     """
     Rain plus melted snow
 
     Args:
         ppt_rain: Precipitation falling as rain
-        swe: Cumulative snow water equivalent
+        swe: Snow water equivalent
         swe_melt: Melted snow water equivalent
 
     Returns:
@@ -97,6 +105,7 @@ def PrecipInput(ppt_rain, swe_melt):
     melt = np.where(np.subtract(swe, swe_melt)>0.0, swe_melt, swe)
     ppt_in = np.add(melt, ppt_rain)
     return ppt_in
+
 
 def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     """
@@ -117,6 +126,7 @@ def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     rain = np.subtract(precip, snow)
     return snow, rain
 
+
 def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
     """
     Determine the amount of precipitation falling as snow
@@ -134,9 +144,12 @@ def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
     snow = np.zeros(precip.shape)
     for i in np.arange(0, precip.shape[1]):
         for j in np.arange(0, precip.shape[2]):
-            snow[:,i,j] = np.where(temp[:,i,j] < train, np.where(temp[:,i,j]>tsnow,
-                                                          np.multiply(precip[:,i,j],
-                                                                      np.divide(np.subtract(temp[:,i,j],tsnow),
-                                                                                (train-tsnow))), precip[:,i,j]), 0.0)
+            snow[:, i, j] = np.where(temp[:, i, j] < train, np.where(temp[:, i, j] > tsnow,
+                                                          np.multiply(precip[:, i, j],
+                                                                      np.divide(np.subtract(temp[:, i, j], tsnow),
+                                                                                (train-tsnow))), precip[:, i, j]), 0.0)
     rain = np.subtract(precip, snow)
     return snow, rain
+
+
+

@@ -1,9 +1,23 @@
-import math
-from conversions import *
+from hydmod.conversions import *
 
 SOLAR_CONSTANT_MIN = 0.0820 #MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 #MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION = 0.408 #MJ/kg
+
+def CloudCoverFraction(qd, qcs):
+    """
+    Estimate of the fraction of cloud cover using observed radiation and predicted clear sky radiation
+    Args:
+        qd: observed solar radiation
+        qcs: predicted clear sky solar radiation
+
+    Returns:
+        fraction of cloud cover (cf)
+
+    """
+
+    cf = np.subtract(1.0, np.divide(qd, qcs))
+    return cf
 
 def DirectSolarRadiation(lat, doy, slope, aspect, dls=0.0, cf=0.0, units='radians'):
     """
@@ -12,6 +26,8 @@ def DirectSolarRadiation(lat, doy, slope, aspect, dls=0.0, cf=0.0, units='radian
     Args:
         lat: latitude
         doy: day of year
+        slope: slope of land surface
+        aspect: aspect of land surface
         dls: days since last snow (default=0)
         cf: forest canopy factor (default=0)
         units: units for lat, slope and aspect; one of 'radians' (default) or 'degrees'
@@ -105,18 +121,32 @@ def EarthSunIRD(doy):
     dr = np.add(1.0, np.multiply(0.033, np.cos(np.multiply(np.divide(2*PI, 365), doy))))
     return dr
 
-def SnowAlbedo(dls):
+def Emissivity_CloudCover(tavg, cf, fce=0.92):
     """
-    Albedo of snow by days since last snowfall (dls)
+    Change in emissivity due to cloud cover
+    Args:
+        tavg: Average daily air temperature
+        cf: Fraction of cloud cover
+        fce:
+
+    Returns:
+
+    """
+
+def SnowAlbedo(dsls, exponent=-0.1908):
+    """
+    Albedo value for snow as a function of days since last snowfall (dsls)
 
     Args:
-        dls: days since last snowfal
+        dsls: days since last snowfall (days)
+        exponent: exponential decay parameter (default: -0.1908)
 
-    Returns: Albedo
+    Returns:
+        snow albedo value (alpha)
 
     """
 
-    alpha = np.multiply(0.738, np.power(dls, -0.1908))
+    alpha = np.multiply(0.738, np.power(dsls, exponent))
     return alpha
 
 def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units="radians"):
