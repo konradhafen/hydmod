@@ -3,6 +3,7 @@ from hydmod.conversions import *
 SOLAR_CONSTANT_MIN = 0.0820 #MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 #MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION = 0.408 #MJ/kg
+STEFAN_BOLTZMAN_CONSTANT = 0.0000567 # kW m^-2 K^-4
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -161,6 +162,25 @@ def ExtraterrestrialRadiation_2d(phi, doy, units='radians'):
 
     return Ra*LATENT_HEAT_VAPORIZATION
 
+def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
+    """
+    Net longwave radiation (KJ m^-2)
+    Args:
+        tavg: average daily temperature
+        qd: observed shorwave radiation
+        qo: potential shortwave radiation
+        es: emissivity of snow (default: 0.98)
+        ts: temperature of snow (default: 0.0 C)
+        fce: forest cover emissivity (default: 0.92)
+
+    Returns:
+        net longwave radiation
+    """
+    ets = Emissivity(tavg, qd, qo, fce)
+    qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMAN_CONSTANT))
+    qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMAN_CONSTANT))
+    qlw = np.subtract(qlw_pt1, qlw_pt2)
+    return qlw
 
 def SnowAlbedo(dsls, exponent=-0.1908):
     """

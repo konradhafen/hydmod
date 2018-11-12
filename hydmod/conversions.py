@@ -2,6 +2,19 @@ import numpy as np
 
 PI = 3.14159
 
+def CelciusToKelvin(tc):
+    """
+    Convert degrees Celcius to Kelvin
+    Args:
+        tc: temperature in celcius
+
+    Returns:
+        temperature in Kelvin
+
+    """
+    tk = np.add(tc, 273.15)
+    return tk
+
 def ConvertToDegrees(var, units):
     if units == "radians":
         return RadiansToDegrees(var)
@@ -51,6 +64,20 @@ def DegreesToRadians(deg):
     """
     rad = deg * (PI/180.0)
     return rad
+
+def KelvinToCelsius(tk):
+    """
+    Convert Kelvin to degrees Celsius
+
+    Args:
+        tk: temperature in Kelvin
+
+    Returns:
+        temperature in Celsius
+
+    """
+    tc = np.subtract(tk, 273.15)
+    return tc
 
 def RadiansToDegrees(rad):
     """
