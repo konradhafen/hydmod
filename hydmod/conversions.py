@@ -2,6 +2,12 @@ import numpy as np
 
 PI = 3.14159
 
+def ConvertToDegrees(var, units):
+    if units == "radians":
+        return RadiansToDegrees(var)
+    else:
+        return var
+
 def ConvertToRadians(var, units):
     if units == "degrees":
         return DegreesToRadians(var)
