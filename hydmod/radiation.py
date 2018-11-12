@@ -4,6 +4,20 @@ SOLAR_CONSTANT_MIN = 0.0820 #MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 #MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION = 0.408 #MJ/kg
 
+def ClearSkyRadiation(qo, transmissivity=0.75):
+    """
+    Predicted radiation at earth's surface
+
+    Args:
+        qo: potential solar radiation above Earth's atmosphere
+        transmissivity: transmissivity factor (default: 0.75)
+
+    Returns:
+        estimate clear sky radiation
+
+    """
+    return transmissivity*qo
+
 def CloudCoverFraction(qd, qcs):
     """
     Estimate of the fraction of cloud cover using observed radiation and predicted clear sky radiation
@@ -53,9 +67,49 @@ def DirectSolarRadiation(lat, doy, slope, aspect, dls=0.0, cf=0.0, units='radian
     qs[qs < 0.1] = 0.1
     return qs
 
+def EarthSunIRD(doy):
+    """
+    The inverse relative distance between the Earth and the Sun
+
+    Args:
+        doy: Day of year (1-365 or 366)
+
+    Returns:
+        Inverse relative distance Earth-Sun
+
+    """
+    dr = np.add(1.0, np.multiply(0.033, np.cos(np.multiply(np.divide(2*PI, 365), doy))))
+    return dr
+
+def Emissivity(tavg, qd, qo, fce=0.92):
+    qcs = ClearSkyRadiation(qo)
+    cf = CloudCoverFraction(qd, qcs)
+    ea = Emissivity_CloudCover(tavg, cf)
+    ets_pt1 = np.multiply(ea, np.subtract(1.0, cf))
+    ets_pt2 = np.multiply(fce, cf)
+    ets = np.add(ets_pt1, ets_pt2)
+    return ets
+
+def Emissivity_CloudCover(tavg, cf):
+    """
+    Change in emissivity due to cloud cover
+    Args:
+        tavg: Average daily air temperature
+        cf: Fraction of cloud cover
+
+    Returns:
+
+    """
+    pt1 = np.add(0.72, np.multiply(0.005, tavg))
+    pt2 = np.subtract(1.0, np.multiply(0.84, cf))
+    pt3 = np.multiply(0.84, cf)
+    ea = np.add(np.multiply(pt1, pt2), pt3)
+    return ea
+
+
 def ExtraterrestrialRadiation(phi, doy, units='radians'):
     """
-    Daily extraterrestrial radiation
+    Daily potential solar radiation
 
     Args:
         phi: Latitude
@@ -82,7 +136,7 @@ def ExtraterrestrialRadiation(phi, doy, units='radians'):
 
 def ExtraterrestrialRadiation_2d(phi, doy, units='radians'):
     """
-    Daily extraterrestrial radiation
+    Daily potential solar radiation
 
     Args:
         phi: Latitude (degrees)
@@ -107,31 +161,6 @@ def ExtraterrestrialRadiation_2d(phi, doy, units='radians'):
 
     return Ra*LATENT_HEAT_VAPORIZATION
 
-def EarthSunIRD(doy):
-    """
-    The inverse relative distance Earth-Sun
-
-    Args:
-        doy: Day of year (1-365 or 366)
-
-    Returns:
-        Inverse relative distance Earth-Sun
-
-    """
-    dr = np.add(1.0, np.multiply(0.033, np.cos(np.multiply(np.divide(2*PI, 365), doy))))
-    return dr
-
-def Emissivity_CloudCover(tavg, cf, fce=0.92):
-    """
-    Change in emissivity due to cloud cover
-    Args:
-        tavg: Average daily air temperature
-        cf: Fraction of cloud cover
-        fce:
-
-    Returns:
-
-    """
 
 def SnowAlbedo(dsls, exponent=-0.1908):
     """
