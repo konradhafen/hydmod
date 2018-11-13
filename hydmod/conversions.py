@@ -16,7 +16,7 @@ def CelciusToKelvin(tc):
     return tk
 
 def ConvertToDegrees(var, units):
-    if units == "radians":
+    if units == 'radians':
         return RadiansToDegrees(var)
     else:
         return var
@@ -91,3 +91,4 @@ def RadiansToDegrees(rad):
 
     """
     deg = rad * (180.0/PI)
+    return deg
