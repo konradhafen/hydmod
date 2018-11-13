@@ -61,9 +61,10 @@ def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, unit
     qo = ExtraterrestrialRadiation(lat, doy, 'radians') #solar radiation incident on a flat surface
     alpha = SnowAlbedo(dls, swe) #snow albedo
     i = SolarIncidenceAngle_2d(slope, aspect, azs, phi, units=units) #angle sun's rays make with sloping surface
-
+    print('i', ConvertToDegrees(i, 'radians'), np.sin(i), 'phi', ConvertToDegrees(phi, 'radians'), np.sin(phi))
     pt1 = np.divide(np.sin(i), np.sin(phi))
     pt1 = np.where(pt1 <= 0.0, 0.0, pt1) #[pt1 <= 0.0] = 0.0
+    print('pt1', pt1)
     pt2 = np.multiply(qo, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
     qs = np.multiply(pt1, pt2)
     qs = np.where(qs < 0.1, 0.1, qs) #[qs < 0.1] = 0.1
