@@ -6,6 +6,7 @@ tavg = 0.0
 doy = 274
 lat = 46.75
 
+
 ra = DirectSolarRadiation(lat, doy, slope, aspect, units='degrees')
 qd = ra
 rl = LongwaveRadiation(tavg, qd, ra)

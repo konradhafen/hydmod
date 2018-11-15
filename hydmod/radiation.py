@@ -53,14 +53,11 @@ def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, unit
     """
 
     lat = ConvertToRadians(lat, units)
-    #slope = ConvertToRadians(slope, units)
-    print('aspect', units, aspect)
     aspect = ConvertToRadians(aspect, units)
-    print('aspect converted', aspect)
     delta = SolarDeclination(doy) #solar declination angle
     phi = SolarElevationAngle(lat, delta) #solar elevation angle
     azs = SolarAzimuthAngle(phi, lat, delta) #solar azimuth angle
-    qo = ExtraterrestrialRadiation(lat, doy, 'radians') #solar radiation incident on a flat surface
+    qo = ExtraterrestrialRadiation(lat, doy) #solar radiation incident on a flat surface
     qcs = ClearSkyRadiation(qo)
     alpha = SnowAlbedo(dls, swe) #snow albedo
     i = SolarIncidenceAngle_2d(slope, aspect, azs, phi) #angle sun's rays make with sloping surface
@@ -111,25 +108,25 @@ def Emissivity_CloudCover(tavg, cf):
     ea = np.add(np.multiply(pt1, pt2), pt3)
     return ea
 
-def ExtraterrestrialRadiation(lat, doy, units='radians'):
+def ExtraterrestrialRadiation(lat, doy):
     """
     Daily potential solar radiation
 
     Args:
-        lat: Latitude
+        lat: Latitude (radians)
         doy: Day of year
-        units: Angle units for phi. One of 'radians' (default) or 'degrees'.
 
     Returns:
         Extraterrestrial solar radiation in mm/day(numpy array)
 
     """
-    if units == 'degrees':
-        lat = DegreesToRadians(lat)
 
     dr = EarthSunIRD(doy)
+    print('ird to sun', dr)
     delta = SolarDeclination(doy)
+    print('solar declination', delta)
     omegas = SunsetHourAngle(lat, delta)
+    print('sunset hour angle', omegas)
 
     pt1 = np.multiply(((24.0*60.0)/PI)*SOLAR_CONSTANT_MIN, dr)
     pt2 = np.multiply(np.multiply(omegas, np.sin(lat)), np.sin(delta))
@@ -164,6 +161,20 @@ def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
     Ra = np.multiply(pt1[:, np.newaxis, np.newaxis], np.add(pt2, pt3))
 
     return Ra*LATENT_HEAT_VAPORIZATION
+
+def HalfDayLength(lat, delta):
+    """
+
+    Args:
+        lat: latitude (radians)
+        delta: solar declination (radians)
+
+    Returns:
+        half day length (radians)
+
+    """
+    hdl = np.arccos(np.multiply(-1.0, np.multiply(np.tan(delta), np.tan(lat))))
+    return hdl
 
 def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
     """
@@ -239,7 +250,8 @@ def SolarDeclination(doy):
         Solar declination angle (radians)
 
     """
-    delta = np.multiply(0.4093, np.sin(np.subtract(np.multiply(np.divide(2*PI, 365), doy), 1.39)))
+    #delta = np.multiply(0.4093, np.sin(np.multiply(np.divide(2*PI, 365), doy-80))) 
+    delta = np.multiply(0.4093, np.sin(np.subtract(np.multiply(np.divide(2 * PI, 365), doy), 1.39)))
     return delta
 
 def SolarElevationAngle(lat, delta, tod=12.0, tsn=12.0, units='radians'):
