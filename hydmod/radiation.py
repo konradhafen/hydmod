@@ -1,9 +1,11 @@
 from hydmod.conversions import *
 
-SOLAR_CONSTANT_MIN = 0.0820 #MJ m^-2 min^-1
-SOLAR_CONSTANT_DAY = 118.1 #MJ m^-2 day^-1
-LATENT_HEAT_VAPORIZATION = 0.408 #MJ/kg
-STEFAN_BOLTZMAN_CONSTANT = 0.0000567 # kW m^-2 K^-4
+SOLAR_CONSTANT_MIN = 0.0820 # MJ m^-2 min^-1
+SOLAR_CONSTANT_DAY = 118.1 # MJ m^-2 day^-1
+LATENT_HEAT_VAPORIZATION_MJ = 0.408 # MJ/kg
+LATENT_HEAT_VAPORIZATION = 2500.0 #kJ/kg
+EMISSIVITY_SNOW = 0.97
+STEFAN_BOLTZMAN_CONSTANT = 0.000000056697 # kW m^-2 K^-4
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -133,7 +135,7 @@ def ExtraterrestrialRadiation(lat, doy):
     pt3 = np.multiply(np.multiply(np.cos(lat), np.cos(delta)), np.sin(omegas))
     Ra = np.multiply(pt1, np.add(pt2, pt3))
 
-    return Ra #*LATENT_HEAT_VAPORIZATION
+    return Ra #*LATENT_HEAT_VAPORIZATION_MJ
 
 def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
     """
@@ -160,7 +162,7 @@ def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
     pt3 = np.multiply(np.multiply(np.cos(lat)[np.newaxis, :, :], np.cos(delta)[:, np.newaxis, np.newaxis]), np.sin(omegas))
     Ra = np.multiply(pt1[:, np.newaxis, np.newaxis], np.add(pt2, pt3))
 
-    return Ra*LATENT_HEAT_VAPORIZATION
+    return Ra # *LATENT_HEAT_VAPORIZATION_MJ
 
 def HalfDayLength(lat, delta):
     """
@@ -190,6 +192,13 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
     Returns:
         net longwave radiation
     """
+    PercentForestCover = 80.0
+    CloudCover = 0.04
+    test1 = (STEFAN_BOLTZMAN_CONSTANT*3600*24)/1000.0
+    test2 = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*(PercentForestCover/100.0)
+    test3 = test2*np.power(CelciusToKelvin(tavg), 4)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0), 4)
+    print(test1, test2, test3)
+    print("longwave", test1*test3)
     ets = Emissivity(tavg, qd, qo, fce)
     qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMAN_CONSTANT))
     qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMAN_CONSTANT))
@@ -250,7 +259,7 @@ def SolarDeclination(doy):
         Solar declination angle (radians)
 
     """
-    #delta = np.multiply(0.4093, np.sin(np.multiply(np.divide(2*PI, 365), doy-80))) 
+    #delta = np.multiply(0.4093, np.sin(np.multiply(np.divide(2*PI, 365), doy-80)))
     delta = np.multiply(0.4093, np.sin(np.subtract(np.multiply(np.divide(2 * PI, 365), doy), 1.39)))
     return delta
 
