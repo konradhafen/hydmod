@@ -225,11 +225,7 @@ def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units='radians'):
     lat = ConvertToRadians(lat, units)
     top = np.subtract(np.multiply(np.sin(phi), np.sin(lat)), np.sin(delta))
     bottom = np.multiply(np.cos(phi), np.cos(lat))
-    print("lat", lat, "top", top, "bottom", bottom, "divide", top/bottom)
-    azs = np.arccos(np.divide(top, bottom))
-    divide = np.divide(top, bottom)
-    azs = np.arccos(divide)
-    print("azs", azs, divide, np.arccos(1.000000000000000))
+    azs = np.arccos(np.round(np.divide(top, bottom), 6))
     azs = np.where(tod>tsn, np.add(PI, azs), np.subtract(PI, azs))
     return azs
 
