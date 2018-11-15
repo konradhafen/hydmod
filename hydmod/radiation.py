@@ -53,20 +53,20 @@ def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, unit
     """
 
     lat = ConvertToRadians(lat, units)
-    slope = ConvertToRadians(slope, units)
+    #slope = ConvertToRadians(slope, units)
+    print('aspect', units, aspect)
     aspect = ConvertToRadians(aspect, units)
+    print('aspect converted', aspect)
     delta = SolarDeclination(doy) #solar declination angle
     phi = SolarElevationAngle(lat, delta) #solar elevation angle
     azs = SolarAzimuthAngle(phi, lat, delta) #solar azimuth angle
-    print("solar azimuth angle", azs, "lat", phi)
     qo = ExtraterrestrialRadiation(lat, doy, 'radians') #solar radiation incident on a flat surface
+    qcs = ClearSkyRadiation(qo)
     alpha = SnowAlbedo(dls, swe) #snow albedo
-    i = SolarIncidenceAngle_2d(slope, aspect, azs, phi, units=units) #angle sun's rays make with sloping surface
-    print('i', ConvertToDegrees(i, 'radians'), np.sin(i), 'phi', ConvertToDegrees(phi, 'radians'), np.sin(phi))
+    i = SolarIncidenceAngle_2d(slope, aspect, azs, phi) #angle sun's rays make with sloping surface
     pt1 = np.divide(np.sin(i), np.sin(phi))
     pt1 = np.where(pt1 <= 0.0, 0.0, pt1) #[pt1 <= 0.0] = 0.0
-    print('pt1', pt1)
-    pt2 = np.multiply(qo, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
+    pt2 = np.multiply(qcs, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
     qs = np.multiply(pt1, pt2)
     qs = np.where(qs < 0.1, 0.1, qs) #[qs < 0.1] = 0.1
     print('q0', qo, 'qs', qs)
@@ -110,7 +110,6 @@ def Emissivity_CloudCover(tavg, cf):
     pt3 = np.multiply(0.84, cf)
     ea = np.add(np.multiply(pt1, pt2), pt3)
     return ea
-
 
 def ExtraterrestrialRadiation(lat, doy, units='radians'):
     """
@@ -214,8 +213,8 @@ def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units='radians'):
         phi: solar elevation or altitude angle (radians)
         lat: latitude
         delta: solar declination angle (radians)
-        tod: time of day (hours; default=12)
-        tsn: time of solar noon (hours; default=12)
+        tod: time of day (hours; default: 12)
+        tsn: time of solar noon (hours; default: 12)
         units: units for lat, "radians" (default) or "degrees"
 
     Returns: Solar Azimuth Angle (radians)
@@ -266,28 +265,25 @@ def SolarElevationAngle(lat, delta, tod=12.0, tsn=12.0, units='radians'):
     print("Elevation angle", np.arcsin(sinphi))
     return np.arcsin(sinphi)
 
-def SolarIncidenceAngle_2d(slope, aspect, az, phi, units='radians'):
+def SolarIncidenceAngle_2d(slope, aspect, az, phi):
     """
     The angle the suns' rays make with a horizontal surface
 
     Args:
-        slope: Slope of land surface (in percent)
+        slope: Slope of land surface (percent)
         aspect: Aspect of sloping surface
         az: solar azimuth angle (radians)
         phi: solar elevation angle (radians)
-        units: units for slope and aspect "radians" (default) or "degrees"
 
     Returns: Solar incidence angle (radians)
 
     """
 
-    #slope = ConvertToRadians(slope, units)
-    aspect = ConvertToRadians(aspect, units)
     i_pt1 = np.multiply(np.sin(np.arctan(slope/100.0)), np.multiply(np.cos(phi), np.cos(np.subtract(az, aspect))))
-    i_pt2 = np.cos(np.multiply(np.arctan(slope/100.0), np.sin(phi)))
+    i_pt2 = np.multiply(np.cos(np.arctan(slope/100.0)), np.sin(phi))
     i = np.arcsin(np.add(i_pt1, i_pt2))
     i = np.where(i>0.0, i, 0.0)
-    print("Incidence angle", i, "az", az)
+    print("Incidence angle", i, "az-aspect", az-aspect, "aspect", aspect, 'az', az)
     return i
 
 def SunsetHourAngle(phi, delta, units='radians'):
