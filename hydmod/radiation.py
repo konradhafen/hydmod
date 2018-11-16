@@ -5,7 +5,7 @@ SOLAR_CONSTANT_DAY = 118.1 # MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION_MJ = 0.408 # MJ/kg
 LATENT_HEAT_VAPORIZATION = 2500.0 #kJ/kg
 EMISSIVITY_SNOW = 0.97
-STEFAN_BOLTZMAN_CONSTANT = 0.000000056697 # kW m^-2 K^-4
+STEFAN_BOLTZMANN_CONSTANT = 5.6697 * 10.0 ** (-8.0) # kW m^-2 K^-4
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -193,15 +193,16 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
         net longwave radiation
     """
     PercentForestCover = 80.0
-    CloudCover = 0.04
-    test1 = (STEFAN_BOLTZMAN_CONSTANT*3600*24)/1000.0
-    test2 = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*(PercentForestCover/100.0)
-    test3 = test2*np.power(CelciusToKelvin(tavg), 4)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0), 4)
+    CloudCover = 0.038948
+    tavg = 7.8
+    test1 = (STEFAN_BOLTZMANN_CONSTANT * 3600 * 24) / 1000.0
+    test2 = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*PercentForestCover/100.0
+    test3 = test2*np.power(CelciusToKelvin(tavg), 4.0)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0.0), 4.0)
     print(test1, test2, test3)
     print("longwave", test1*test3)
     ets = Emissivity(tavg, qd, qo, fce)
-    qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMAN_CONSTANT))
-    qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMAN_CONSTANT))
+    qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMANN_CONSTANT))
+    qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMANN_CONSTANT))
     qlw = np.subtract(qlw_pt1, qlw_pt2)
     return qlw
 
@@ -303,8 +304,9 @@ def SolarIncidenceAngle_2d(slope, aspect, az, phi):
     i_pt1 = np.multiply(np.sin(np.arctan(slope/100.0)), np.multiply(np.cos(phi), np.cos(np.subtract(az, aspect))))
     i_pt2 = np.multiply(np.cos(np.arctan(slope/100.0)), np.sin(phi))
     i = np.arcsin(np.add(i_pt1, i_pt2))
+    print(i)
     i = np.where(i>0.0, i, 0.0)
-    print("Incidence angle", i, "az-aspect", az-aspect, "aspect", aspect, 'az', az)
+    print("Incidence angle", i, "az-aspect", az-aspect, "aspect", aspect, 'az', az, 'elevation angle', phi)
     return i
 
 def SunsetHourAngle(phi, delta, units='radians'):

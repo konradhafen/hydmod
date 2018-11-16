@@ -12,7 +12,7 @@ def CelciusToKelvin(tc):
         temperature in Kelvin
 
     """
-    tk = np.add(tc, 273.15)
+    tk = np.add(tc, 273.0)
     return tk
 
 def ConvertToDegrees(var, units):

@@ -1,8 +1,8 @@
 from hydmod.radiation import *
 
-slope = 0.0
-aspect = 0.0
-tavg = 8.0
+slope = 100.0
+aspect = 180.0
+tavg = 7.8
 doy = 274
 lat = 46.75
 
