@@ -38,7 +38,7 @@ def CloudCoverFraction(qd, qcs):
 
 def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, units='radians'):
     """
-    Direct solar radiation incident on a sloping surface
+    Direct solar radiation incident on a sloping surface (MJ/m^2)
 
     Args:
         lat: latitude
@@ -50,7 +50,8 @@ def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, unit
         cf: forest canopy factor (default: 0)
         units: units for lat, slope and aspect; one of 'radians' (default) or 'degrees'
 
-    Returns: Solar radiation
+    Returns:
+        direct solar radiation (MJ/m^2)
 
     """
 
@@ -180,7 +181,7 @@ def HalfDayLength(lat, delta):
 
 def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
     """
-    Net longwave radiation (KJ m^-2)
+    Net longwave radiation (KJ m^2)
     Args:
         tavg: average daily temperature
         qd: observed shorwave radiation
@@ -190,21 +191,20 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
         fce: forest cover emissivity (default: 0.92)
 
     Returns:
-        net longwave radiation
+        net longwave radiation (KJ/m^2)
     """
     PercentForestCover = 80.0
     CloudCover = 0.038948
     tavg = 7.8
-    test1 = (STEFAN_BOLTZMANN_CONSTANT * 3600 * 24) / 1000.0
-    test2 = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*PercentForestCover/100.0
-    test3 = test2*np.power(CelciusToKelvin(tavg), 4.0)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0.0), 4.0)
-    print(test1, test2, test3)
-    print("longwave", test1*test3)
-    ets = Emissivity(tavg, qd, qo, fce)
-    qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMANN_CONSTANT))
-    qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMANN_CONSTANT))
-    qlw = np.subtract(qlw_pt1, qlw_pt2)
-    return qlw
+    pt1 = (STEFAN_BOLTZMANN_CONSTANT * 3600 * 24) / 1000.0
+    intm = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*PercentForestCover/100.0
+    pt2 = intm*np.power(CelciusToKelvin(tavg), 4.0)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0.0), 4.0)
+    qlw = pt1*pt2
+    # ets = Emissivity(tavg, qd, qo, fce)
+    # qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMANN_CONSTANT))
+    # qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMANN_CONSTANT))
+    # qlw = np.subtract(qlw_pt1, qlw_pt2)
+    return qlw # KJ/m^2
 
 def SnowAlbedo(dsls, swe=0.0, exponent=-0.1908):
     """
