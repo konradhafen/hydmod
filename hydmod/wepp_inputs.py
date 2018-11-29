@@ -11,6 +11,7 @@ from osgeo import gdal
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import richdem as rd
 import os
 
@@ -34,7 +35,7 @@ clipath = 'climate/265191.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
 
 daystart = 1 #165
-dayend = 365 #200
+dayend = 10 #200
 ndays = dayend-daystart+1
 d = clidat[daystart-1:dayend-1, 0]
 m = clidat[daystart-1:dayend-1, 1]
@@ -103,6 +104,7 @@ pet2d = np.zeros(ppt_in2d.shape)
 pet2d[0] = et.PET_Hargreaves1985(tmax2d[0], tmin2d[0], tavg2d[0], Ra2d)/1000.0  # m/day
 aet[0,:,:] = et.ET_theta_2d(pet2d[0,:,:], fcl, wpl, s[0,:,:])
 
+ims = []
 for i in range(1, ppt_in2d.shape[0]):
     qs = rad.DirectSolarRadiation(lat, doy[i], slpnp, aspnp, units='degrees')
     qd = qs
@@ -145,20 +147,25 @@ outcol = 1
 # print('qlat', qlat_in[:, outrow, outcol]-qlat_out[:,outrow, outcol])
 # print('runoff accum', ra[:, outrow, outcol])
 # print('flow', ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol]))
-plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
-         doy, ra[:, outrow, outcol], 'c',
-         doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
-plt.show()
-plt.plot(doy, qlat_in[:, outrow, outcol], 'b', doy, qlat_out[:, outrow, outcol], 'r')
-plt.show()
 
-plt.plot(doy, hwt[:, outrow, outcol], 'b')
-plt.show()
-plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
-plt.show()
-print(np.sum(ppt_in2d[1, :, :]))
-print(np.sum(r[1, :, :]))
-print(doy)
+##############################################################
+###### Use these plots #######################################
+##############################################################
+# plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
+#          doy, ra[:, outrow, outcol], 'c',
+#          doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
+# plt.show()
+# plt.plot(doy, qlat_in[:, outrow, outcol], 'b', doy, qlat_out[:, outrow, outcol], 'r')
+# plt.show()
+#
+# plt.plot(doy, hwt[:, outrow, outcol], 'b')
+# plt.show()
+# plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
+# plt.show()
+# print(np.sum(ppt_in2d[1, :, :]))
+# print(np.sum(r[1, :, :]))
+# print(doy)
+##############################################################
 # plt.plot(doy, s[:,outrow,outcol], 'b')
 # plt.show()
 
