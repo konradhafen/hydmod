@@ -3,10 +3,12 @@ from hydmod.conversions import *
 SOLAR_CONSTANT_MIN = 0.0820 # MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 # MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION_MJ = 0.408 # MJ/kg
-LATENT_HEAT_VAPORIZATION = 2500.0 #kJ/kg
-LATENT_HEAT_FUSION = 335.0 #KJ/kg
+LATENT_HEAT_VAPORIZATION = 2500.0 # KJ/kg
+LATENT_HEAT_FUSION = 335.0 # KJ/kg
 EMISSIVITY_SNOW = 0.97
-DENSITY_WATER = 1000.0 #kg/m^3
+DENSITY_WATER = 1000.0 # kg/m^3
+DENSITY_AIR = 1.29 # kg/m^3
+HEAT_CAPACITY_AIR = 1.0 # KJ/kg/C
 STEFAN_BOLTZMANN_CONSTANT = 5.6697 * 10.0 ** (-8.0) # kW m^-2 K^-4
 VON_KARMON_CONSTANT = 0.41
 
@@ -216,6 +218,10 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
     # qlw = np.subtract(qlw_pt1, qlw_pt2)
     return qlw # KJ/m^2
 
+def SensibleRadiation(tavg, windr):
+    qsens = np.multiply(HEAT_CAPACITY_AIR, np.multiply(DENSITY_AIR, np.divide(tavg, np.divide(windr, 3600.0*24.0))))
+    return qsens
+
 def SnowAlbedo(dsls, swe=0.0, exponent=-0.1908):
     """
     Albedo value for snow as a function of days since last snowfall (dsls)
@@ -343,9 +349,20 @@ def SunsetHourAngle(phi, delta, units='radians'):
     else:
         return value
 
-def WindRoughness(windv):
-    pt1 = np.log(np.divide(np.add(np.subtract(ZU, D), ZM)), ZM)
-    pt2 = np.log(np.add(np.subtract(ZT, D), ZH))
-    pt3 = np.multiply(VON_KARMON_CONSTANT**2.0, np.multiply(windv, np.divide(np.subtract(1, D), 101.0)))
+def WindRoughness(windv, pfc):
+    """
+    Wind roughness (s/m)
+
+    Args:
+        windv: wind speed (m/s)
+        pfc: percent forest cover (%)
+
+    Returns:
+        wind roughness (s/m)
+
+    """
+    pt1 = np.log(np.divide(np.add(np.subtract(ZU, D), ZM), ZM))
+    pt2 = np.log(np.divide(np.add(np.subtract(ZT, D), ZH), ZH))
+    pt3 = np.multiply(np.multiply(VON_KARMON_CONSTANT**2.0, windv), np.subtract(1.0, np.divide(pfc, 101.0)))
     wr = np.divide(np.multiply(pt1, pt2), pt3)
     return wr
