@@ -4,8 +4,18 @@ SOLAR_CONSTANT_MIN = 0.0820 # MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 # MJ m^-2 day^-1
 LATENT_HEAT_VAPORIZATION_MJ = 0.408 # MJ/kg
 LATENT_HEAT_VAPORIZATION = 2500.0 #kJ/kg
+LATENT_HEAT_FUSION = 335.0 #KJ/kg
 EMISSIVITY_SNOW = 0.97
+DENSITY_WATER = 1000.0 #kg/m^3
 STEFAN_BOLTZMANN_CONSTANT = 5.6697 * 10.0 ** (-8.0) # kW m^-2 K^-4
+VON_KARMON_CONSTANT = 0.41
+
+#wind roughness parameters
+D = 0.0 # m - height of zero plane displacement
+ZM = 0.001 # m - momentum roughness parameter
+ZH = 0.0002 # m - heat and vapor roughness parameter
+ZU = 2.0 # m height of wind measurements
+ZT = 2.0 # m height of temp measurements
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -69,7 +79,7 @@ def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, unit
     pt2 = np.multiply(qcs, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
     qs = np.multiply(pt1, pt2)
     qs = np.where(qs < 0.1, 0.1, qs) #[qs < 0.1] = 0.1
-    print('q0', qo, 'qs', qs)
+    # print('q0', qo, 'qs', qs)
     return qs
 
 def EarthSunIRD(doy):
@@ -125,11 +135,11 @@ def ExtraterrestrialRadiation(lat, doy):
     """
 
     dr = EarthSunIRD(doy)
-    print('ird to sun', dr)
+    # print('ird to sun', dr)
     delta = SolarDeclination(doy)
-    print('solar declination', delta)
+    # print('solar declination', delta)
     omegas = SunsetHourAngle(lat, delta)
-    print('sunset hour angle', omegas)
+    # print('sunset hour angle', omegas)
 
     pt1 = np.multiply(((24.0*60.0)/PI)*SOLAR_CONSTANT_MIN, dr)
     pt2 = np.multiply(np.multiply(omegas, np.sin(lat)), np.sin(delta))
@@ -284,7 +294,7 @@ def SolarElevationAngle(lat, delta, tod=12.0, tsn=12.0, units='radians'):
     pt2 = np.multiply(np.cos(lat), np.cos(delta))
     pt3 = np.cos(np.divide(np.multiply(PI, np.subtract(tod, tsn)),12.0))
     sinphi = np.add(pt1, np.multiply(pt2,pt3))
-    print("Elevation angle", np.arcsin(sinphi))
+    # print("Elevation angle", np.arcsin(sinphi))
     return np.arcsin(sinphi)
 
 def SolarIncidenceAngle_2d(slope, aspect, az, phi):
@@ -304,9 +314,9 @@ def SolarIncidenceAngle_2d(slope, aspect, az, phi):
     i_pt1 = np.multiply(np.sin(np.arctan(slope/100.0)), np.multiply(np.cos(phi), np.cos(np.subtract(az, aspect))))
     i_pt2 = np.multiply(np.cos(np.arctan(slope/100.0)), np.sin(phi))
     i = np.arcsin(np.add(i_pt1, i_pt2))
-    print(i)
+    # print(i)
     i = np.where(i>0.0, i, 0.0)
-    print("Incidence angle", i, "az-aspect", az-aspect, "aspect", aspect, 'az', az, 'elevation angle', phi)
+    # print("Incidence angle", i, "az-aspect", az-aspect, "aspect", aspect, 'az', az, 'elevation angle', phi)
     return i
 
 def SunsetHourAngle(phi, delta, units='radians'):
@@ -332,3 +342,10 @@ def SunsetHourAngle(phi, delta, units='radians'):
         return RadiansToDegrees(value)
     else:
         return value
+
+def WindRoughness(windv):
+    pt1 = np.log(np.divide(np.add(np.subtract(ZU, D), ZM)), ZM)
+    pt2 = np.log(np.add(np.subtract(ZT, D), ZH))
+    pt3 = np.multiply(VON_KARMON_CONSTANT**2.0, np.multiply(windv, np.divide(np.subtract(1, D), 101.0)))
+    wr = np.divide(np.multiply(pt1, pt2), pt3)
+    return wr

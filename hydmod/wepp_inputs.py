@@ -43,6 +43,7 @@ y = clidat[daystart-1:dayend-1, 2]
 ppt = clidat[daystart-1:dayend-1, 3] * 0.0254
 tmax = clidat[daystart-1:dayend-1, 7]
 tmin = clidat[daystart-1:dayend-1, 8]
+wind = clidat[daystart-1:dayend-1, 10]
 
 doy = conv.DayOfYear(m, d, y)
 ppt2d = np.reshape(np.repeat(ppt, nrow*ncol), (ndays-1, nrow, ncol))
