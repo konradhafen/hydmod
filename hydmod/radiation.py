@@ -191,7 +191,7 @@ def HalfDayLength(lat, delta):
     hdl = np.arccos(np.multiply(-1.0, np.multiply(np.tan(delta), np.tan(lat))))
     return hdl
 
-def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
+def LongwaveRadiation(tavg, pfc, cc, qd, qo, ts=0.0, fce=0.92):
     """
     Net longwave radiation (KJ m^2)
     Args:
@@ -205,11 +205,11 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
     Returns:
         net longwave radiation (KJ/m^2)
     """
-    PercentForestCover = 80.0
-    CloudCover = 0.038948
+    pfc = 80.0
+    cc = 0.038948
     tavg = 7.8
-    pt1 = (STEFAN_BOLTZMANN_CONSTANT * 3600 * 24) / 1000.0
-    intm = ((0.72+0.005*tavg)*(1-0.84*CloudCover)+0.84*CloudCover)*(1-PercentForestCover/100.0)+0.92*PercentForestCover/100.0
+    pt1 = (STEFAN_BOLTZMANN_CONSTANT * 3600.0 * 24.0) / 1000.0
+    intm = ((0.72+0.005*tavg)*(1-0.84*cc)+0.84*cc)*(1-pfc/100.0)+fce*pfc/100.0
     pt2 = intm*np.power(CelciusToKelvin(tavg), 4.0)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0.0), 4.0)
     qlw = pt1*pt2
     # ets = Emissivity(tavg, qd, qo, fce)

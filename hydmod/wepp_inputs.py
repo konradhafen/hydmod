@@ -34,8 +34,8 @@ aspnp = aspds.GetRasterBand(1).ReadAsArray()
 clipath = 'climate/265191.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
 
-daystart = 1 #165
-dayend = 10 #200
+daystart = 1
+dayend = 730
 ndays = dayend-daystart+1
 d = clidat[daystart-1:dayend-1, 0]
 m = clidat[daystart-1:dayend-1, 1]
@@ -152,17 +152,17 @@ outcol = 1
 ##############################################################
 ###### Use these plots #######################################
 ##############################################################
-# plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
-#          doy, ra[:, outrow, outcol], 'c',
-#          doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
-# plt.show()
-# plt.plot(doy, qlat_in[:, outrow, outcol], 'b', doy, qlat_out[:, outrow, outcol], 'r')
-# plt.show()
-#
-# plt.plot(doy, hwt[:, outrow, outcol], 'b')
-# plt.show()
-# plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
-# plt.show()
+plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
+         doy, ra[:, outrow, outcol], 'c',
+         doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
+plt.show()
+plt.plot(doy, qlat_in[:, outrow, outcol], 'b', doy, qlat_out[:, outrow, outcol], 'r')
+plt.show()
+
+plt.plot(doy, hwt[:, outrow, outcol], 'b')
+plt.show()
+plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
+plt.show()
 # print(np.sum(ppt_in2d[1, :, :]))
 # print(np.sum(r[1, :, :]))
 # print(doy)
