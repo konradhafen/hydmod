@@ -220,7 +220,7 @@ def LongwaveRadiation(tavg, qd, qo, es=0.98, ts=0.0, fce=0.92):
 
 def SensibleRadiation(tavg, windr):
     qsens = np.multiply(HEAT_CAPACITY_AIR, np.multiply(DENSITY_AIR, np.divide(tavg, np.divide(windr, 3600.0*24.0))))
-    return qsens
+    return qsens # KJ/m^2
 
 def SnowAlbedo(dsls, swe=0.0, exponent=-0.1908):
     """
