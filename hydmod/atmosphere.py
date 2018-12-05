@@ -1,4 +1,8 @@
 import numpy as np
+from hydmod.conversions import *
+
+THERMODYNAMIC_VAPOR_CONSTANT = 0.4615 #kJ/kg/K
+VON_KARMON_CONSTANT = 0.41
 
 #wind roughness parameters
 D = 0.0 # m - height of zero plane displacement
@@ -6,20 +10,6 @@ ZM = 0.001 # m - momentum roughness parameter
 ZH = 0.0002 # m - heat and vapor roughness parameter
 ZU = 2.0 # m height of wind measurements
 ZT = 2.0 # m height of temp measurements
-
-def ActualVaporPressure(td):
-    """
-    Actual vapor pressure (kPa)
-    Args:
-        td: dewpoint temperature (degrees C)
-
-    Returns:
-        Actual vapor pressure (kPa)
-
-    """
-    e = np.multiply(6.11, np.power(10.0, np.divide(np.multiply(7.5, td), np.add(237.7, td)))) # millibars
-    e = np.divide(e, 10.0) # kPa
-    return e
 
 def RelativeHumidity(tc, td):
     """
@@ -32,23 +22,27 @@ def RelativeHumidity(tc, td):
         relative humidity (proportion 0.0 - 1.0)
 
     """
-    e = ActualVaporPressure(td)
-    es = SaturationVaporPressure(tc)
+    e = VaporPressure(td)
+    es = VaporPressure(tc)
     rh = np.divide(e, es)
     return rh
 
-def SaturationVaporPressure(tc):
+def VaporPressure(tc):
     """
-    Saturation vapor pressure (kPa)
+    Vapor pressure (kPa)
     Args:
         tc: temperature (degrees C)
 
     Returns:
-        Saturation vapor pressure (kPa)
+        vapor pressure (kPa)
 
     """
     es = np.exp(np.divide(np.subtract(np.multiply(16.78, tc), 116.9), np.add(tc, 237.3)))
     return es # kPa
+
+def VaporDensity(e, tc):
+    vd = np.divide(np.divide(e, CelciusToKelvin(tc)), THERMODYNAMIC_VAPOR_CONSTANT)
+    return vd #kg/m^3
 
 def WindRoughness(windv, pfc):
     """

@@ -10,8 +10,8 @@ EMISSIVITY_SNOW = 0.97
 DENSITY_WATER = 1000.0 # kg/m^3
 DENSITY_AIR = 1.29 # kg/m^3
 HEAT_CAPACITY_AIR = 1.0 # KJ/kg/C
+HEAT_FROM_GROUND = 173 # kJ/m^2/day
 STEFAN_BOLTZMANN_CONSTANT = 5.6697 * 10.0 ** (-8.0) # kW m^-2 K^-4
-VON_KARMON_CONSTANT = 0.41
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -185,10 +185,13 @@ def HalfDayLength(lat, delta):
     hdl = np.arccos(np.multiply(-1.0, np.multiply(np.tan(delta), np.tan(lat))))
     return hdl
 
-def LatentRadiation(tavg, td):
+def LatentRadiation(td, tsnow, windv, pfc):
     #latentheatvaporization(KJ)*(vapor density-snow vapor density)/(wind roughness/(3600*24))
-    es = SaturationVaporPressure(tavg)
-    e = ActualVaporPressure(td)
+    vda = VaporDensity(VaporPressure(td), td)
+    vdsnow = VaporDensity(VaporPressure(tsnow), tsnow)
+    wr = WindRoughness(windv, pfc)
+    qlatent = np.multiply(LATENT_HEAT_VAPORIZATION, np.divide(np.subtract(vda, vdsnow), np.divide(wr, 3600.0*24.0))) # kJ/m^2
+    return qlatent
 
 def LongwaveRadiation(tavg, pfc, cc, qd, qo, ts=0.0, fce=0.92):
     """

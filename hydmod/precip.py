@@ -1,8 +1,8 @@
 import numpy as np
 
-def DaysSinceLastSnow(dates, snow):
-    return
+def DaysSinceLastSnow(snowfall):
 
+    return
 
 def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     """
@@ -20,7 +20,6 @@ def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     melt = k*(temp-tbase)
     melt[melt < 0.0] = 0.0
     return melt
-
 
 def ModelSWE(ppt_snow, swe_melt):
     """
@@ -45,7 +44,6 @@ def ModelSWE(ppt_snow, swe_melt):
             act_melt[i] = swe_cum[i-1]
 
     return swe_cum, act_melt
-
 
 def ModelSWE_2d(ppt_snow, swe_melt):
     """
@@ -73,7 +71,6 @@ def ModelSWE_2d(ppt_snow, swe_melt):
 
     return swe_cum, act_melt
 
-
 def PrecipDaily(acprecip):
     """
     Calculate daily precipitation from accumulated precipitation. Assumes accumulated precipitation for day preceding record is 0
@@ -87,7 +84,6 @@ def PrecipDaily(acprecip):
 
     acprecip = np.insert(acprecip, 0, 0)
     return np.ediff1d(acprecip)
-
 
 def PrecipInput(ppt_rain, swe, swe_melt):
     """
@@ -105,7 +101,6 @@ def PrecipInput(ppt_rain, swe, swe_melt):
     melt = np.where(np.subtract(swe, swe_melt)>0.0, swe_melt, swe)
     ppt_in = np.add(melt, ppt_rain)
     return ppt_in
-
 
 def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
     """
@@ -125,7 +120,6 @@ def PrecipPhase(precip, temp, train=3.0, tsnow=0.0):
                                                                                      (train-tsnow))), precip), 0.0)
     rain = np.subtract(precip, snow)
     return snow, rain
-
 
 def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
     """
@@ -150,6 +144,22 @@ def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
                                                                                 (train-tsnow))), precip[:, i, j]), 0.0)
     rain = np.subtract(precip, snow)
     return snow, rain
+
+def SnowAge(snowfall):
+    age = np.zeros(snowfall.shape)
+    if len(snowfall.shape) == 1:
+        for i in range(0, snowfall.shape[0]):
+            age[i] = np.where(snowfall[i] > 0, 0, snowfall[i]+1)
+
+    elif len(snowfall.shape == 3):
+        for i in range(0, snowfall.shape[0]):
+            age[i,:,:] = np.where(snowfall[i,:,:] > 0, 0, snowfall[i,:,:]+1)
+
+    else:
+        print('ERROR: snowfall array not of acceptable shape, must have 1 or 3 dimensions')
+        return
+
+
 
 
 

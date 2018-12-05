@@ -79,6 +79,9 @@ def KelvinToCelsius(tk):
     tc = np.subtract(tk, 273.15)
     return tc
 
+def LangleyTokJsqm(langleys):
+    return np.multiply(langleys, 41.84)
+
 def RadiansToDegrees(rad):
     """
     Convert radians to degrees
