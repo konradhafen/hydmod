@@ -1,4 +1,5 @@
 from hydmod.conversions import *
+from hydmod.atmosphere import *
 
 SOLAR_CONSTANT_MIN = 0.0820 # MJ m^-2 min^-1
 SOLAR_CONSTANT_DAY = 118.1 # MJ m^-2 day^-1
@@ -11,13 +12,6 @@ DENSITY_AIR = 1.29 # kg/m^3
 HEAT_CAPACITY_AIR = 1.0 # KJ/kg/C
 STEFAN_BOLTZMANN_CONSTANT = 5.6697 * 10.0 ** (-8.0) # kW m^-2 K^-4
 VON_KARMON_CONSTANT = 0.41
-
-#wind roughness parameters
-D = 0.0 # m - height of zero plane displacement
-ZM = 0.001 # m - momentum roughness parameter
-ZH = 0.0002 # m - heat and vapor roughness parameter
-ZU = 2.0 # m height of wind measurements
-ZT = 2.0 # m height of temp measurements
 
 def ClearSkyRadiation(qo, transmissivity=0.75):
     """
@@ -191,6 +185,11 @@ def HalfDayLength(lat, delta):
     hdl = np.arccos(np.multiply(-1.0, np.multiply(np.tan(delta), np.tan(lat))))
     return hdl
 
+def LatentRadiation(tavg, td):
+    #latentheatvaporization(KJ)*(vapor density-snow vapor density)/(wind roughness/(3600*24))
+    es = SaturationVaporPressure(tavg)
+    e = ActualVaporPressure(td)
+
 def LongwaveRadiation(tavg, pfc, cc, qd, qo, ts=0.0, fce=0.92):
     """
     Net longwave radiation (KJ m^2)
@@ -348,21 +347,3 @@ def SunsetHourAngle(phi, delta, units='radians'):
         return RadiansToDegrees(value)
     else:
         return value
-
-def WindRoughness(windv, pfc):
-    """
-    Wind roughness (s/m)
-
-    Args:
-        windv: wind speed (m/s)
-        pfc: percent forest cover (%)
-
-    Returns:
-        wind roughness (s/m)
-
-    """
-    pt1 = np.log(np.divide(np.add(np.subtract(ZU, D), ZM), ZM))
-    pt2 = np.log(np.divide(np.add(np.subtract(ZT, D), ZH), ZH))
-    pt3 = np.multiply(np.multiply(VON_KARMON_CONSTANT**2.0, windv), np.subtract(1.0, np.divide(pfc, 101.0)))
-    wr = np.divide(np.multiply(pt1, pt2), pt3)
-    return wr
