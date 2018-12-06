@@ -42,40 +42,44 @@ def CloudCoverFraction(qd, qcs):
     cf = np.subtract(1.0, np.divide(qd, qcs))
     return cf
 
-def DirectSolarRadiation(lat, doy, slope, aspect, swe=0.0, dls=0.1, cf=0.0, units='radians'):
+def DirectSolarRadiation_SlopingSurface(lat, doy, qobs, slope, aspect, pfc, swe=0.0, dls=0, units='radians'):
     """
     Direct solar radiation incident on a sloping surface (MJ/m^2)
 
     Args:
         lat: latitude
         doy: day of year
+        qobs: observed solar radiation (kJ/m^2)
         slope: slope of land surface
         aspect: aspect of land surface
+        pfc: percent forest cover
         swe: snow water equivalent (default: 0.0)
-        dls: days since last snow (default: 0.1)
-        cf: forest canopy factor (default: 0)
-        units: units for lat, slope and aspect; one of 'radians' (default) or 'degrees'
+        dls: days since last snow (default: 0)
+        units: units for lat and aspect; one of 'radians' (default) or 'degrees'
 
     Returns:
-        direct solar radiation (MJ/m^2)
+        direct solar radiation (kJ/m^2)
 
     """
 
+    sa = SnowAlbedo(dls, swe)
     lat = ConvertToRadians(lat, units)
     aspect = ConvertToRadians(aspect, units)
     delta = SolarDeclination(doy) #solar declination angle
     phi = SolarElevationAngle(lat, delta) #solar elevation angle
     azs = SolarAzimuthAngle(phi, lat, delta) #solar azimuth angle
     qo = ExtraterrestrialRadiation(lat, doy) #solar radiation incident on a flat surface
-    qcs = ClearSkyRadiation(qo)
+    qcs = ClearSkyRadiation(qo) #kJ/m^2
+    cc = CloudCoverFraction(qobs, qcs)
+    print(qcs, qobs, cc)
     alpha = SnowAlbedo(dls, swe) #snow albedo
     i = SolarIncidenceAngle_2d(slope, aspect, azs, phi) #angle sun's rays make with sloping surface
     pt1 = np.divide(np.sin(i), np.sin(phi))
     pt1 = np.where(pt1 <= 0.0, 0.0, pt1) #[pt1 <= 0.0] = 0.0
-    pt2 = np.multiply(qcs, np.multiply(np.subtract(1.0, cf), np.subtract(1.0, alpha)))
+    pt2 = np.multiply((qcs/1000.0), np.multiply(np.subtract(1.0, cc), np.subtract(1.0, alpha)))
     qs = np.multiply(pt1, pt2)
     qs = np.where(qs < 0.1, 0.1, qs) #[qs < 0.1] = 0.1
-    # print('q0', qo, 'qs', qs)
+    qs = (1-(pfc/100.0))*(1.0-sa)*qs*1000.0 # kJ/m^2
     return qs
 
 def EarthSunIRD(doy):
@@ -126,7 +130,7 @@ def ExtraterrestrialRadiation(lat, doy):
         doy: Day of year
 
     Returns:
-        Extraterrestrial solar radiation in mm/day(numpy array)
+        Extraterrestrial solar radiation in kJ/m^2/day (numpy array)
 
     """
 
@@ -142,7 +146,7 @@ def ExtraterrestrialRadiation(lat, doy):
     pt3 = np.multiply(np.multiply(np.cos(lat), np.cos(delta)), np.sin(omegas))
     Ra = np.multiply(pt1, np.add(pt2, pt3))
 
-    return Ra #*LATENT_HEAT_VAPORIZATION_MJ
+    return Ra*1000 # kJ/m^2/day
 
 def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
     """
@@ -154,7 +158,7 @@ def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
         units: Angle units for phi. One of 'radians' (default) or 'degrees'.
 
     Returns:
-        Extraterrestrial solar radiation in mm/day(numpy array)
+        Extraterrestrial solar radiation (kJ/m^2/day)
 
     """
     if units == 'degrees':
@@ -169,7 +173,7 @@ def ExtraterrestrialRadiation_2d(lat, doy, units='radians'):
     pt3 = np.multiply(np.multiply(np.cos(lat)[np.newaxis, :, :], np.cos(delta)[:, np.newaxis, np.newaxis]), np.sin(omegas))
     Ra = np.multiply(pt1[:, np.newaxis, np.newaxis], np.add(pt2, pt3))
 
-    return Ra # *LATENT_HEAT_VAPORIZATION_MJ
+    return Ra*1000 # kJ/m^2/day
 
 def HalfDayLength(lat, delta):
     """

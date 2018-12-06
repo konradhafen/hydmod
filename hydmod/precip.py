@@ -148,12 +148,14 @@ def PrecipPhase_2d(precip, temp, train=3.0, tsnow=0.0):
 def SnowAge(snowfall):
     age = np.zeros(snowfall.shape)
     if len(snowfall.shape) == 1:
-        for i in range(0, snowfall.shape[0]):
-            age[i] = np.where(snowfall[i] > 0, 0, snowfall[i]+1)
+        for i in range(1, snowfall.shape[0]):
+            age[i] = np.where(snowfall[i] > 0, 0, age[i-1]+1)
+        return age
 
-    elif len(snowfall.shape == 3):
-        for i in range(0, snowfall.shape[0]):
-            age[i,:,:] = np.where(snowfall[i,:,:] > 0, 0, snowfall[i,:,:]+1)
+    elif len(snowfall.shape) == 3:
+        for i in range(1, snowfall.shape[0]):
+            age[i,:,:] = np.where(snowfall[i,:,:] > 0, 0, age[i-1,:,:]+1)
+        return age
 
     else:
         print('ERROR: snowfall array not of acceptable shape, must have 1 or 3 dimensions')

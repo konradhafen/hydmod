@@ -35,7 +35,7 @@ clipath = 'climate/265191.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
 
 daystart = 1
-dayend = 730
+dayend = 366
 ndays = dayend-daystart+1
 d = clidat[daystart-1:dayend-1, 0]
 m = clidat[daystart-1:dayend-1, 1]
@@ -60,6 +60,7 @@ tsnow = 0.
 # calculate melted snow
 swe_melt2d = np.apply_along_axis(precip.MeltDegreeDay_USACE, 0, tavg2d, k=k, tbase=tbase)
 ppt_snow2d, ppt_rain2d = precip.PrecipPhase_2d(ppt2d, tavg2d, train, tsnow)
+snowage = precip.SnowAge(ppt_snow2d)
 swe_mod2d, act_melt2d = precip.ModelSWE_2d(ppt_snow2d, swe_melt2d)
 ppt_in2d = np.add(ppt_rain2d, act_melt2d)
 
@@ -98,7 +99,7 @@ qlat_nr = np.zeros(ndays)
 fprop = fr.FlowProportions(demfil)
 qs = rad.DirectSolarRadiation(lat, doy[0], slpnp, aspnp, units='degrees')
 qd = qs
-ql = rad.LongwaveRadiation(tavg2d[0], qd, qs)/1000.0
+ql = rad.LongwaveRadiation(tavg2d[0], 90.0, 0.0, qd, qs)/1000.0
 Ra2d = (qs+ql)*rad.LATENT_HEAT_VAPORIZATION_MJ # mm/timestep (day)
 # calculate PET
 pet2d = np.zeros(ppt_in2d.shape)
@@ -109,7 +110,7 @@ ims = []
 for i in range(1, ppt_in2d.shape[0]):
     qs = rad.DirectSolarRadiation(lat, doy[i], slpnp, aspnp, units='degrees')
     qd = qs
-    ql = rad.LongwaveRadiation(tavg2d[i], qd, qs) / 1000.0
+    ql = rad.LongwaveRadiation(tavg2d[i], 80.0, 0.0, qd, qs) / 1000.0
     Ra2d = (qs + ql) * rad.LATENT_HEAT_VAPORIZATION_MJ  # mm/timestep (day)
     s[i, :, :] = s[i - 1, :, :] + ppt_in2d[i,:,:]
     hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
@@ -162,6 +163,8 @@ plt.show()
 plt.plot(doy, hwt[:, outrow, outcol], 'b')
 plt.show()
 plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
+plt.show()
+plt.plot(doy, snowage[:, outrow, outcol], 'b')
 plt.show()
 # print(np.sum(ppt_in2d[1, :, :]))
 # print(np.sum(r[1, :, :]))
