@@ -11,9 +11,20 @@ from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 import richdem as rd
-import os
+from contextlib import contextmanager
+import sys, os
 
-os.chdir('C:/temp/smr/trimmer_peak')
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+os.chdir('C:/temp/smr/temple_fork')
 dempath = 'dem/dem.tif'
 demds = gdal.Open(dempath)
 geot = demds.GetGeoTransform()
@@ -21,23 +32,24 @@ demnp = demds.GetRasterBand(1).ReadAsArray()
 nrow = demds.RasterYSize
 ncol = demds.RasterXSize
 demds = None
-demfil = rd.FillDepressions(rd.LoadGDAL(dempath))
-rdaccum = rd.FlowAccumulation(demfil, method='Dinf')
+with suppress_stdout():
+    demfil = rd.FillDepressions(rd.LoadGDAL(dempath))
+    rdaccum = rd.FlowAccumulation(demfil, method='Dinf')
 
 slpds = gdal.Open('export/arcmap/gtiffs/FVSLOP.tif')
 slpnp = slpds.GetRasterBand(1).ReadAsArray()*100.0
 aspds = gdal.Open('export/arcmap/gtiffs/TASPEC.tif')
 aspnp = aspds.GetRasterBand(1).ReadAsArray()
-clipath = 'climate/265191.cli'
+clipath = 'climate/424856.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
 
-lat = 38.95 #latitude
+lat = 41.82 #latitude
 lat2d = np.full((nrow, ncol), lat)
 pfc = 0.0 #percent forest cover
 
 #set simulation time frame
 daystart = 1
-dayend = 205
+dayend = 730
 ndays = dayend-daystart
 dayindex = np.arange(ndays)
 
@@ -45,6 +57,10 @@ dayindex = np.arange(ndays)
 d = clidat[daystart-1:dayend-1, 0]
 m = clidat[daystart-1:dayend-1, 1]
 y = clidat[daystart-1:dayend-1, 2]+2000
+
+df = pd.DataFrame({'year': y, 'month': m, 'day': d})
+dt = pd.DatetimeIndex(pd.to_datetime(df))
+#print(dt)
 
 doy = conv.DayOfYear(m, d, y)
 ppt = np.reshape(np.repeat(clidat[daystart-1:dayend-1, 3] * 0.0254, nrow*ncol), (ndays, nrow, ncol))
@@ -130,30 +146,28 @@ qlat_nr = np.zeros(ndays)
 
 fprop = fr.FlowProportions(demfil)
 
-for i in range(1, ppt.shape[0]):
-    s[i, :, :] = s[i - 1, :, :] + ppt[i, :, :]
-    hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
-    qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slpnp / 100.0, hwt[i, :, :], geot[1], geot[1])
-    qlat_in[i, :, :], qlat_nr[i] = fr.RouteFlow(fprop, qlat_out[i, :, :])
-    s[i, :, :] = s[i, :, :] + qlat_in[i, :, :] - qlat_out[i, :, :]
-    aet[i, :, :] = et.ET_theta_2d(pet[i, :, :], fcl, wpl, s[i - 1, :, :])
-    s[i, :, :] = s[i, :, :] - aet[i, :, :]
-    perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], 1.0), soildepth))
-    s[i, :, :] = s[i, :, :] - perc[i, :, :]
-    r[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (s[i, :, :] - (soildepth * por)), 0.0)
-    ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i, :, :])
-    s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
+with suppress_stdout():
+    for i in range(1, ppt.shape[0]):
+        s[i, :, :] = s[i - 1, :, :] + ppt[i, :, :]
+        hwt[i, :, :] = gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], soildepth), soildepth)
+        qlat_out[i, :, :] = gw.LateralFlow_Darcy_2d(ksat, slpnp / 100.0, hwt[i, :, :], geot[1], geot[1])
+        qlat_in[i, :, :], qlat_nr[i] = fr.RouteFlow(fprop, qlat_out[i, :, :])
+        s[i, :, :] = s[i, :, :] + qlat_in[i, :, :] - qlat_out[i, :, :]
+        aet[i, :, :] = et.ET_theta_2d(pet[i, :, :], fcl, wpl, s[i - 1, :, :])
+        s[i, :, :] = s[i, :, :] - aet[i, :, :]
+        perc[i, :, :] = gw.Percolation_2d(ksub, gw.WaterTableHeight(por, fc, np.divide(s[i, :, :], 1.0), soildepth))
+        s[i, :, :] = s[i, :, :] - perc[i, :, :]
+        r[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (s[i, :, :] - (soildepth * por)), 0.0)
+        ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i, :, :])
+        s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
 
 #basin outlet
-outrow = 12
-outcol = 1
+outletrow = 130
+outletcol = 34
 #another point
 outrow = 13
 outcol = 17
-plt.plot(dayindex, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
-         dayindex, ra[:, outrow, outcol], 'c',
-         dayindex, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
-plt.show()
+
 plt.plot(dayindex, qlat_in[:, outrow, outcol], 'b', dayindex, qlat_out[:, outrow, outcol], 'r')
 plt.show()
 
@@ -169,4 +183,13 @@ plt.plot(dayindex, radadj[:, outrow, outcol], 'r',
          dayindex, qtotal[:, outrow, outcol], 'y',
          dayindex, radobs[:, outrow, outcol], 'k')
 plt.show()
-print('aspect', aspnp[outrow, outcol])
+
+plt.plot(dayindex, qlat_in[:, outletrow, outletcol]-qlat_out[:, outletrow, outletcol], 'g',
+         dayindex, ra[:, outletrow, outletcol], 'c',
+         dayindex, (ra[:, outletrow, outletcol]+(qlat_in[:, outletrow, outletcol]-qlat_out[:, outletrow, outletcol])), 'b')
+plt.show()
+
+flow = ((ra[:, outletrow, outletcol]+(qlat_in[:, outletrow, outletcol]-qlat_out[:, outletrow, outletcol]))
+        *geot[1]*np.abs(geot[5]))/(3600*24) #cms
+plt.plot(dt, flow, 'b')
+plt.show()
