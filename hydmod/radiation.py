@@ -247,6 +247,8 @@ def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units='radians'):
     """
 
     lat = ConvertToRadians(lat, units)
+    if len(phi.shape) == 3:
+        delta = delta[:,None,None]
     top = np.subtract(np.multiply(np.sin(phi), np.sin(lat)), np.sin(delta))
     bottom = np.multiply(np.cos(phi), np.cos(lat))
     azs = np.arccos(np.round(np.divide(top, bottom), 6))
@@ -284,6 +286,8 @@ def SolarElevationAngle(lat, delta, tod=12.0, tsn=12.0, units='radians'):
     """
 
     lat = ConvertToRadians(lat, units)
+    if len(lat.shape) == 2 and len(delta.shape) == 1:
+        delta = delta[:,None, None]
     pt1 = np.multiply(np.sin(lat), np.sin(delta))
     pt2 = np.multiply(np.cos(lat), np.cos(delta))
     pt3 = np.cos(np.divide(np.multiply(PI, np.subtract(tod, tsn)),12.0))

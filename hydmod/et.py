@@ -1,5 +1,5 @@
 import numpy as np
-from radiation import *
+from hydmod.radiation import *
 
 def ET_theta(pet, fc, wp, wc):
     """
@@ -21,7 +21,7 @@ def ET_theta(pet, fc, wp, wc):
     elif wc <= wp:
         theta = 0.0
     #print("wc", wc, "fc", 0.8*fc, "wp", wp, "theta", theta)
-    return(pet*theta)
+    return pet*theta
 
 def ET_theta_2d(pet, fc, wp, wc):
     """
@@ -39,7 +39,12 @@ def ET_theta_2d(pet, fc, wp, wc):
     #theta = np.ones(pet.shape)
     theta = np.where(np.greater(wc, wp), np.where(np.less(wc, (0.8*fc)) & np.greater(wc, wp),
                                                   np.subtract(1.0, np.divide(np.subtract(0.8*fc, wc),np.subtract(0.8*fc,wp))), 1.0), 0.0)
-    return(pet*theta)
+    outrow = 6
+    outcol = 12
+    print('theta', theta[outrow,outcol], 'wc', wc[outrow,outcol], 'wp', wp[outrow,outcol], 'fc', fc[outrow,outcol])
+    aet= pet*theta
+    print('aet', aet[outrow, outcol], 'pet', pet[outrow,outcol])
+    return aet
 
 def PET_Hargreaves1985(tmax, tmin, tmean, Ra):
     """

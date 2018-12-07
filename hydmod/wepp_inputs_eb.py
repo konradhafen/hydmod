@@ -31,12 +31,13 @@ aspnp = aspds.GetRasterBand(1).ReadAsArray()
 clipath = 'climate/265191.cli'
 clidat = np.genfromtxt(clipath, skip_header=15)
 
-lat = 41.97 #latitude
-pfc = 80.0 #percent forest cover
+lat = 38.95 #latitude
+lat2d = np.full((nrow, ncol), lat)
+pfc = 0.0 #percent forest cover
 
 #set simulation time frame
 daystart = 1
-dayend = 365
+dayend = 205
 ndays = dayend-daystart
 dayindex = np.arange(ndays)
 
@@ -65,7 +66,8 @@ tsnow = 0.0
 snow, rain = precip.PrecipPhase_2d(ppt, tavg, train, tsnow)
 snowage = precip.SnowAge(snow) #assumes snow never melts
 snowalbedo = rad.SnowAlbedo(snowage, 1.0) #assumes snow never melts
-radadj = rad.DirectSolarRadiation_Adjustment(radobs, pfc, snowalbedo)
+radadj = rad.DirectSolarRadiation_SlopingSurface(lat2d, doy, radobs, slpnp, aspnp)
+radadj = rad.DirectSolarRadiation_Adjustment(radadj, pfc, snowalbedo)
 
 rl = rad.LongwaveRadiation(tavg, pfc, cc)
 wr = rad.WindRoughness(wind, pfc)
@@ -74,7 +76,7 @@ es = rad.VaporPressure(tavg)
 e = rad.VaporPressure(td)
 vda = rad.VaporDensity(e, td)
 vds = rad.VaporDensity(es, tavg)
-vdsnow = rad.VaporDensity(rad.VaporPressure(0.0), 0.0)
+vdsnow = rad.VaporDensity(rad.VaporPressure(np.where(tavg < 0.0, tavg, 0.0)), np.where(tavg < 0.0, tavg, 0.0))
 ql = rad.LatentRadiation(td, tsnow, wind, pfc)
 qtotal = radadj + rl + qs + ql + rad.HEAT_FROM_GROUND
 qtotal = np.where(qtotal>0.0, qtotal, 0.0)
@@ -104,7 +106,7 @@ q = np.zeros((ndays, nrow, ncol))
 #set initial values
 r[0, :, :] = 0.0  # set initial runoff m
 ra[0, :, :] = 0.0
-s[0, :, :] = 0.5  # set initial storage (i.e water content) m
+s[0, :, :] = 0.3  # set initial storage (i.e water content) m
 sb[0, :, :] = 0.0  # set initial aquifer storage (baseflow source) m
 soildepth = np.full((nrow, ncol), 2.0)  # depth of soil profile m
 
@@ -146,8 +148,8 @@ for i in range(1, ppt.shape[0]):
 outrow = 12
 outcol = 1
 #another point
-outrow = 6
-outcol = 12
+outrow = 13
+outcol = 17
 plt.plot(dayindex, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
          dayindex, ra[:, outrow, outcol], 'c',
          dayindex, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
@@ -157,5 +159,14 @@ plt.show()
 
 plt.plot(dayindex, hwt[:, outrow, outcol], 'b')
 plt.show()
-plt.plot(dayindex, pet[:, outrow-6, outcol+10], 'r', dayindex, aet[:, outrow-6, outcol+10], 'g')
+plt.plot(dayindex, pet[:, outrow, outcol], 'r', dayindex, aet[:, outrow, outcol], 'g')
 plt.show()
+
+plt.plot(dayindex, radadj[:, outrow, outcol], 'r',
+         dayindex, rl[:, outrow, outcol], 'b',
+         dayindex, ql[:, outrow, outcol], 'c',
+         dayindex, qs[:, outrow, outcol], 'g',
+         dayindex, qtotal[:, outrow, outcol], 'y',
+         dayindex, radobs[:, outrow, outcol], 'k')
+plt.show()
+print('aspect', aspnp[outrow, outcol])
