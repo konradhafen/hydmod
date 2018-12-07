@@ -1,8 +1,5 @@
 import numpy as np
 
-def DaysSinceLastSnow(snowfall):
-
-    return
 
 def MeltDegreeDay_USACE(temp, k, tbase=0.0):
     """

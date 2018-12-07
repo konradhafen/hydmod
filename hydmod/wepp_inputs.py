@@ -44,12 +44,18 @@ ppt = clidat[daystart-1:dayend-1, 3] * 0.0254
 tmax = clidat[daystart-1:dayend-1, 7]
 tmin = clidat[daystart-1:dayend-1, 8]
 wind = clidat[daystart-1:dayend-1, 10]
+td = clidat[daystart-1:dayend-1, 12]
+radobs = conv.LangleyTokJsqm(clidat[daystart-1:dayend-1, 9]) #langleys -> kJ/m^2
+
 
 doy = conv.DayOfYear(m, d, y)
 ppt2d = np.reshape(np.repeat(ppt, nrow*ncol), (ndays-1, nrow, ncol))
 tmin2d = np.reshape(np.repeat(tmin, nrow*ncol), (ndays-1, nrow, ncol))
 tmax2d = np.reshape(np.repeat(tmax, nrow*ncol), (ndays-1, nrow, ncol))
 tavg2d = 0.5 * (tmin2d + tmax2d)
+wind2d = np.reshape(np.repeat(wind, nrow*ncol), (ndays-1, nrow, ncol))
+td2d = np.reshape(np.repeat(td, nrow*ncol), (ndays-1, nrow, ncol))
+radobs2d = np.reshape(np.repeat(radobs, nrow*ncol), (ndays-1, nrow, ncol))
 
 # from optimization in R
 k = 1.16
@@ -89,7 +95,7 @@ por = np.full((nrow, ncol), 0.5)
 fc = np.full((nrow, ncol), 0.3)
 wp = np.full((nrow, ncol), 0.1)
 ksub = np.full((nrow, ncol), 0.001) # m/day
-alpha = 0.02
+alpha = 0.02 #baseflow recession coefficient
 porl = np.multiply(por, soildepth)
 fcl = np.multiply(fc, soildepth)
 wpl = np.multiply(wp, soildepth)
@@ -164,8 +170,7 @@ plt.plot(doy, hwt[:, outrow, outcol], 'b')
 plt.show()
 plt.plot(doy, pet2d[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
 plt.show()
-plt.plot(doy, snowage[:, outrow, outcol], 'b')
-plt.show()
+
 # print(np.sum(ppt_in2d[1, :, :]))
 # print(np.sum(r[1, :, :]))
 # print(doy)

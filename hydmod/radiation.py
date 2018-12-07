@@ -25,7 +25,7 @@ def ClearSkyRadiation(qo, transmissivity=0.75):
         estimate clear sky radiation
 
     """
-    return transmissivity*qo
+    return np.multiply(transmissivity, qo)
 
 def CloudCoverFraction(qd, qcs):
     """
@@ -40,47 +40,41 @@ def CloudCoverFraction(qd, qcs):
     """
 
     cf = np.subtract(1.0, np.divide(qd, qcs))
-    return cf
+    return np.where(cf<0.0, 0.0, cf)
 
-def DirectSolarRadiation_SlopingSurface(lat, doy, qobs, slope, aspect, pfc, swe=0.0, dls=0, units='radians'):
+def DirectSolarRadiation_Adjustment(qin, pfc=0.0, snowAlbedo=0.0, cc=0.0):
+    adj = np.multiply((qin), np.multiply(np.subtract(1.0, np.divide(pfc, 100.0)), np.subtract(1.0, snowAlbedo)))
+    return adj #kJ/m^2
+
+def DirectSolarRadiation_SlopingSurface(lat, doy, qin, slope, aspect, units='radians'):
     """
     Direct solar radiation incident on a sloping surface (MJ/m^2)
 
     Args:
         lat: latitude
         doy: day of year
-        qobs: observed solar radiation (kJ/m^2)
+        qin: input solar radiation (kJ/m^2)
         slope: slope of land surface
         aspect: aspect of land surface
-        pfc: percent forest cover
-        swe: snow water equivalent (default: 0.0)
-        dls: days since last snow (default: 0)
         units: units for lat and aspect; one of 'radians' (default) or 'degrees'
 
     Returns:
         direct solar radiation (kJ/m^2)
 
     """
-
-    sa = SnowAlbedo(dls, swe)
     lat = ConvertToRadians(lat, units)
     aspect = ConvertToRadians(aspect, units)
     delta = SolarDeclination(doy) #solar declination angle
     phi = SolarElevationAngle(lat, delta) #solar elevation angle
     azs = SolarAzimuthAngle(phi, lat, delta) #solar azimuth angle
-    qo = ExtraterrestrialRadiation(lat, doy) #solar radiation incident on a flat surface
-    qcs = ClearSkyRadiation(qo) #kJ/m^2
-    cc = CloudCoverFraction(qobs, qcs)
-    print(qcs, qobs, cc)
-    alpha = SnowAlbedo(dls, swe) #snow albedo
     i = SolarIncidenceAngle_2d(slope, aspect, azs, phi) #angle sun's rays make with sloping surface
     pt1 = np.divide(np.sin(i), np.sin(phi))
     pt1 = np.where(pt1 <= 0.0, 0.0, pt1) #[pt1 <= 0.0] = 0.0
-    pt2 = np.multiply((qcs/1000.0), np.multiply(np.subtract(1.0, cc), np.subtract(1.0, alpha)))
-    qs = np.multiply(pt1, pt2)
+    #pt2 = np.multiply((qcs), np.multiply(np.subtract(1.0, np.divide(pfc, 100.0)), np.subtract(1.0, snowAlbedo)))
+    #qs = np.multiply(pt1, pt2)
+    qs = np.multiply(pt1, qin)
     qs = np.where(qs < 0.1, 0.1, qs) #[qs < 0.1] = 0.1
-    qs = (1-(pfc/100.0))*(1.0-sa)*qs*1000.0 # kJ/m^2
-    return qs
+    return qs #kJ/m^2
 
 def EarthSunIRD(doy):
     """
@@ -121,7 +115,7 @@ def Emissivity_CloudCover(tavg, cf):
     ea = np.add(np.multiply(pt1, pt2), pt3)
     return ea
 
-def ExtraterrestrialRadiation(lat, doy):
+def ExtraterrestrialRadiation(lat, doy, units='radians'):
     """
     Daily potential solar radiation
 
@@ -134,12 +128,10 @@ def ExtraterrestrialRadiation(lat, doy):
 
     """
 
+    lat = ConvertToRadians(lat, units)
     dr = EarthSunIRD(doy)
-    # print('ird to sun', dr)
     delta = SolarDeclination(doy)
-    # print('solar declination', delta)
     omegas = SunsetHourAngle(lat, delta)
-    # print('sunset hour angle', omegas)
 
     pt1 = np.multiply(((24.0*60.0)/PI)*SOLAR_CONSTANT_MIN, dr)
     pt2 = np.multiply(np.multiply(omegas, np.sin(lat)), np.sin(delta))
@@ -190,14 +182,13 @@ def HalfDayLength(lat, delta):
     return hdl
 
 def LatentRadiation(td, tsnow, windv, pfc):
-    #latentheatvaporization(KJ)*(vapor density-snow vapor density)/(wind roughness/(3600*24))
     vda = VaporDensity(VaporPressure(td), td)
     vdsnow = VaporDensity(VaporPressure(tsnow), tsnow)
     wr = WindRoughness(windv, pfc)
     qlatent = np.multiply(LATENT_HEAT_VAPORIZATION, np.divide(np.subtract(vda, vdsnow), np.divide(wr, 3600.0*24.0))) # kJ/m^2
     return qlatent
 
-def LongwaveRadiation(tavg, pfc, cc, qd, qo, ts=0.0, fce=0.92):
+def LongwaveRadiation(tavg, pfc, cc, fce=0.92):
     """
     Net longwave radiation (KJ m^2)
     Args:
@@ -211,29 +202,22 @@ def LongwaveRadiation(tavg, pfc, cc, qd, qo, ts=0.0, fce=0.92):
     Returns:
         net longwave radiation (KJ/m^2)
     """
-    pfc = 80.0
-    cc = 0.038948
-    tavg = 7.8
     pt1 = (STEFAN_BOLTZMANN_CONSTANT * 3600.0 * 24.0) / 1000.0
     intm = ((0.72+0.005*tavg)*(1-0.84*cc)+0.84*cc)*(1-pfc/100.0)+fce*pfc/100.0
     pt2 = intm*np.power(CelciusToKelvin(tavg), 4.0)-EMISSIVITY_SNOW*np.power(CelciusToKelvin(0.0), 4.0)
     qlw = pt1*pt2
-    # ets = Emissivity(tavg, qd, qo, fce)
-    # qlw_pt1 = np.multiply(np.power(CelciusToKelvin(tavg), 4.0), np.multiply(ets, STEFAN_BOLTZMANN_CONSTANT))
-    # qlw_pt2 = np.multiply(np.power(ts, 4.0), np.multiply(es, STEFAN_BOLTZMANN_CONSTANT))
-    # qlw = np.subtract(qlw_pt1, qlw_pt2)
     return qlw # KJ/m^2
 
 def SensibleRadiation(tavg, windr):
     qsens = np.multiply(HEAT_CAPACITY_AIR, np.multiply(DENSITY_AIR, np.divide(tavg, np.divide(windr, 3600.0*24.0))))
     return qsens # KJ/m^2
 
-def SnowAlbedo(dsls, swe=0.0, exponent=-0.1908):
+def SnowAlbedo(snowage, swe=0.0, exponent=-0.1908):
     """
-    Albedo value for snow as a function of days since last snowfall (dsls)
+    Albedo value for snow as a function of days since last snowfall (snowage)
 
     Args:
-        dsls: days since last snowfall (days)
+        snowage: days since last snowfall (days)
         swe: snow water equivalent (default: 0.0)
         exponent: exponential decay parameter (default: -0.1908)
 
@@ -242,10 +226,8 @@ def SnowAlbedo(dsls, swe=0.0, exponent=-0.1908):
 
     """
 
-    if swe > 0.0:
-        alpha = np.multiply(0.738, np.power(dsls, exponent))
-    else:
-        alpha = 0.0
+    alpha = np.where(snowage == 0.0, 0.738, 0.0)
+    alpha = np.where((alpha == 0.0) & (swe > 0.0), np.multiply(0.738, np.power(snowage, exponent)), alpha)
     return alpha
 
 def SolarAzimuthAngle(phi, lat, delta, tod=12, tsn=12, units='radians'):
