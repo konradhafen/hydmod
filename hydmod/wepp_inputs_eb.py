@@ -9,9 +9,7 @@ import datetime
 import pandas as pd
 from osgeo import gdal
 import numpy as np
-import math
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import richdem as rd
 import os
 
@@ -38,7 +36,7 @@ pfc = 80.0 #percent forest cover
 
 #set simulation time frame
 daystart = 1
-dayend = 2000
+dayend = 365
 ndays = dayend-daystart
 dayindex = np.arange(ndays)
 
