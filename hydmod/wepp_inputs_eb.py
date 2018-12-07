@@ -71,9 +71,7 @@ wind =  np.reshape(np.repeat(clidat[daystart-1:dayend-1, 10], nrow*ncol), (ndays
 td =  np.reshape(np.repeat(clidat[daystart-1:dayend-1, 12], nrow*ncol), (ndays, nrow, ncol))
 radobs =  np.reshape(np.repeat(conv.LangleyTokJsqm(clidat[daystart-1:dayend-1, 9]), nrow*ncol), (ndays, nrow, ncol)) #langleys -> kJ/m^2
 qcs = rad.ClearSkyRadiation(rad.ExtraterrestrialRadiation_2d(np.full((nrow, ncol),conv.DegreesToRadians(lat)), doy))
-#radmod_max = rad.DirectSolarRadiation_SlopingSurface(lat, doy, qcs, slpnp, aspnp, 'degrees')
 cc = rad.CloudCoverFraction(radobs, qcs)
-print(doy.shape, ppt.shape, ndays)
 #parameters for precip phase
 train = 3.0
 tsnow = 0.0
