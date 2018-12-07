@@ -38,16 +38,14 @@ pfc = 80.0 #percent forest cover
 
 #set simulation time frame
 daystart = 1
-dayend = 4
+dayend = 2000
 ndays = dayend-daystart
+dayindex = np.arange(ndays)
 
 #read input data
 d = clidat[daystart-1:dayend-1, 0]
 m = clidat[daystart-1:dayend-1, 1]
 y = clidat[daystart-1:dayend-1, 2]+2000
-sdate = datetime.date(year=np.int(y[1]), month=np.int(m[1]), day=np.int(d[1]))
-dt = np.array([sdate + datetime.timedelta(days=1) for i in range(ndays)])
-print(dt)
 
 doy = conv.DayOfYear(m, d, y)
 ppt = np.reshape(np.repeat(clidat[daystart-1:dayend-1, 3] * 0.0254, nrow*ncol), (ndays, nrow, ncol))
@@ -146,16 +144,20 @@ for i in range(1, ppt.shape[0]):
     ra[i, :, :] = rd.FlowAccumulation(rd.LoadGDAL(dempath), method='Dinf', weights=r[i, :, :])
     s[i, :, :] = np.where(s[i, :, :] > (soildepth * por), (soildepth * por), s[i, :, :])
 
+#basin outlet
 outrow = 12
 outcol = 1
-plt.plot(doy, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
-         doy, ra[:, outrow, outcol], 'c',
-         doy, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
+#another point
+outrow = 6
+outcol = 12
+plt.plot(dayindex, qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol], 'g',
+         dayindex, ra[:, outrow, outcol], 'c',
+         dayindex, (ra[:, outrow, outcol]+(qlat_in[:, outrow, outcol]-qlat_out[:, outrow, outcol])), 'b')
 plt.show()
-plt.plot(doy, qlat_in[:, outrow, outcol], 'b', doy, qlat_out[:, outrow, outcol], 'r')
+plt.plot(dayindex, qlat_in[:, outrow, outcol], 'b', dayindex, qlat_out[:, outrow, outcol], 'r')
 plt.show()
 
-plt.plot(doy, hwt[:, outrow, outcol], 'b')
+plt.plot(dayindex, hwt[:, outrow, outcol], 'b')
 plt.show()
-plt.plot(dt, pet[:, outrow-6, outcol+10], 'r', doy, aet[:, outrow-6, outcol+10], 'g')
+plt.plot(dayindex, pet[:, outrow-6, outcol+10], 'r', dayindex, aet[:, outrow-6, outcol+10], 'g')
 plt.show()
